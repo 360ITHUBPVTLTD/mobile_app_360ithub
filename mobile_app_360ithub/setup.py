@@ -43,6 +43,12 @@ def get_custom_fields():
                 "default": "0",
                 "insert_after": "checkin_method",
                 "depends_on": "eval:doc.checkin_method == 'Mobile App'"
+            },
+            {
+                "fieldname": "custom_anniversary_date",
+                "label": "Anniversary Date",
+                "fieldtype": "Date",
+                "insert_after": "marital_status"
             }
         ],
 
@@ -117,57 +123,91 @@ def delete_custom_fields(custom_fields):
 
 
 def setup_roles():
-    role = "HRMS Employee"
-    if not frappe.db.exists("Role", role):
-        frappe.get_doc({
-            "doctype": "Role",
-            "role_name": role,
-            "desk_access": 1,
-            "is_custom": 1
-        }).insert(ignore_permissions=True)
+    roles = ["HRMS Employee", "HRMS HR"]
+    for role in roles:
+        if not frappe.db.exists("Role", role):
+            frappe.get_doc({
+                "doctype": "Role",
+                "role_name": role,
+                "desk_access": 1,
+                "is_custom": 1
+            }).insert(ignore_permissions=True)
 
 def setup_permissions():
-    role = "HRMS Employee"
+    roles = {
     
-    # Definition of permissions
-    perms = [
-        # 1. Transactions (Create allowed)
-        {
-            "doctype": "Employee Checkin", 
-            "read": 1, "create": 1, "write": 0, 
-            "if_owner": 1 # Can only see checkins created by themselves
-        },
-        {
-            "doctype": "Leave Application", 
-            "read": 1, "create": 1, "write": 1, 
-            "if_owner": 1 # Can only see/edit their own applications
-        },
-        {
-            "doctype": "Comment", 
-            "read": 1, "create": 1, "write": 1
-        },
+        # Definition of permissions
+        "HRMS Employee":  [
+            # 1. Transactions (Create allowed)
+            {
+                "doctype": "Employee Checkin", 
+                "read": 1, "create": 1, "write": 0, 
+                "if_owner": 1 # Can only see checkins created by themselves
+            },
+            {
+                "doctype": "Leave Application", 
+                "read": 1, "create": 1, "write": 1, 
+                "if_owner": 1 # Can only see/edit their own applications
+            },
+            {
+                "doctype": "Comment", 
+                "read": 1, "create": 1, "write": 1
+            },
 
-        # 2. Read Only Data (Masters & Reports)
-        # Note: For Salary Slip & Attendance, we do NOT set if_owner=1
-        # because HR creates these, not the employee. 
-        # Filtering to "Only their own" is handled by User Permissions.
-        {
-            "doctype": "Attendance", "read": 1, "write": 0, "create": 0},
+            # 2. Read Only Data (Masters & Reports)
+            # Note: For Salary Slip & Attendance, we do NOT set if_owner=1
+            # because HR creates these, not the employee. 
+            # Filtering to "Only their own" is handled by User Permissions.
+            {
+                "doctype": "Attendance", "read": 1, "write": 0, "create": 0},
+            
+            {
+                "doctype": "Employee", "read": 1, "write": 0, "create": 0},
+            
+            # 3. Configuration Data
+            {
+                "doctype": "Branch", "read": 1, "write": 0, "create": 0},
+            {
+                "doctype": "Holiday List", "read": 1, "write": 0, "create": 0},
+            # {
+            #     "doctype": "Task Type", "read": 1, "write": 0, "create": 0
+            # },
+        ],
+        "HRMS HR": [
+            {"doctype": "Employee", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Branch", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Department", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Designation", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Holiday List", "read": 1, "write": 1, "create": 1},
         
-        {
-            "doctype": "Employee", "read": 1, "write": 0, "create": 0},
+        # 2. Attendance & Shifts
+        {"doctype": "Employee Checkin", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Attendance", "read": 1, "write": 1, "create": 1, "submit": 1},
+        {"doctype": "Shift Type", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Shift Assignment", "read": 1, "write": 1, "create": 1, "submit": 1},
         
-        # 3. Configuration Data
-        {
-            "doctype": "Branch", "read": 1, "write": 0, "create": 0},
-        {
-            "doctype": "Holiday List", "read": 1, "write": 0, "create": 0},
-        {
-            "doctype": "Task Type", "read": 1, "write": 0, "create": 0},
-    ]
-
-    for p in perms:
-        add_permission(role, p)
+        # 3. Leave Management
+        {"doctype": "Leave Application", "read": 1, "write": 1, "create": 1, "submit": 1},
+        {"doctype": "Leave Allocation", "read": 1, "write": 1, "create": 1, "submit": 1},
+        {"doctype": "Leave Type", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Leave Policy", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Leave Policy Assignment", "read": 1, "write": 1, "create": 1},
+        {"doctype": "Leave Period", "read": 1, "write": 1, "create": 1},
+        
+        # 4. Payroll (Crucial)
+        # {"doctype": "Salary Slip", "read": 1, "write": 1, "create": 1, "submit": 1},
+        # {"doctype": "Payroll Entry", "read": 1, "write": 1, "create": 1, "submit": 1},
+        # {"doctype": "Salary Structure", "read": 1, "write": 1, "create": 1},
+        # {"doctype": "Salary Structure Assignment", "read": 1, "write": 1, "create": 1},
+        # {"doctype": "Salary Component", "read": 1, "write": 1, "create": 1},
+        
+        # 5. General / Utility
+        {"doctype": "Comment", "read": 1, "write": 1, "create": 1},
+        ]
+        }
+    for role, perms in roles.items():
+        for p in perms:
+            add_permission(role, p)
 
 def add_permission(role, p):
     doctype = p["doctype"]
@@ -191,3 +231,5 @@ def add_permission(role, p):
                 doc.save(ignore_permissions=True)
         except Exception:
             pass
+
+
