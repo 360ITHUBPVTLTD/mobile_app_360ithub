@@ -6,6 +6,8 @@ def after_migrate():
     Triggered by 'bench migrate'.
     """
     create_custom_fields(get_custom_fields(), ignore_validate=True)
+    setup_roles()
+    setup_permissions()
 
 def before_uninstall():
     """
@@ -109,3 +111,83 @@ def delete_custom_fields(custom_fields):
             },
         )
         frappe.clear_cache(doctype=doctype)
+
+
+
+
+
+def setup_roles():
+    role = "HRMS Employee"
+    if not frappe.db.exists("Role", role):
+        frappe.get_doc({
+            "doctype": "Role",
+            "role_name": role,
+            "desk_access": 1,
+            "is_custom": 1
+        }).insert(ignore_permissions=True)
+
+def setup_permissions():
+    role = "HRMS Employee"
+    
+    # Definition of permissions
+    perms = [
+        # 1. Transactions (Create allowed)
+        {
+            "doctype": "Employee Checkin", 
+            "read": 1, "create": 1, "write": 0, 
+            "if_owner": 1 # Can only see checkins created by themselves
+        },
+        {
+            "doctype": "Leave Application", 
+            "read": 1, "create": 1, "write": 1, 
+            "if_owner": 1 # Can only see/edit their own applications
+        },
+        {
+            "doctype": "Comment", 
+            "read": 1, "create": 1, "write": 1
+        },
+
+        # 2. Read Only Data (Masters & Reports)
+        # Note: For Salary Slip & Attendance, we do NOT set if_owner=1
+        # because HR creates these, not the employee. 
+        # Filtering to "Only their own" is handled by User Permissions.
+        {
+            "doctype": "Attendance", "read": 1, "write": 0, "create": 0},
+        
+        {
+            "doctype": "Employee", "read": 1, "write": 0, "create": 0},
+        
+        # 3. Configuration Data
+        {
+            "doctype": "Branch", "read": 1, "write": 0, "create": 0},
+        {
+            "doctype": "Holiday List", "read": 1, "write": 0, "create": 0},
+        {
+            "doctype": "Task Type", "read": 1, "write": 0, "create": 0},
+    ]
+
+    for p in perms:
+        add_permission(role, p)
+
+def add_permission(role, p):
+    doctype = p["doctype"]
+    
+    # Check if permission entry exists
+    if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role}):
+        try:
+            # Create the base permission
+            frappe.permissions.add_permission(doctype, role, 0)
+            
+            # Update specific rights
+            perm_name = frappe.db.get_value("Custom DocPerm", {"parent": doctype, "role": role})
+            if perm_name:
+                doc = frappe.get_doc("Custom DocPerm", perm_name)
+                doc.read = p.get("read", 0)
+                doc.write = p.get("write", 0)
+                doc.create = p.get("create", 0)
+                doc.submit = p.get("submit", 0)
+                doc.cancel = p.get("cancel", 0)
+                doc.if_owner = p.get("if_owner", 0)
+                doc.save(ignore_permissions=True)
+        except Exception:
+            pass
