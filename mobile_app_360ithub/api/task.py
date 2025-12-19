@@ -5,7 +5,7 @@ from frappe.utils import getdate, today
 @frappe.whitelist()
 def get_task_summary():
     # user = frappe.session.user
-    # tesks = get_doc_with_filters("Task", filters={"custom_task_owner": user}, limit=999999)
+
     pending_tasks = get_doc_with_filters("Task", filters=
 [["status","not in",["Template", "Completed", "Cancelled"]]],  limit=9999999)
  
