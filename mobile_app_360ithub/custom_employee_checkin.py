@@ -36,7 +36,7 @@ def biomentric_login(employee_code=None, employee_name=None, log_datetime=None,
     try:
         body_data = json.loads(frappe.request.data) if frappe.request.data else {}
     except Exception as e:
-        frappe.log_error("Biometric Error - Invalid JSON", frappe.get_traceback())
+        frappe.log_error(title="Biometric Error - Invalid JSON", message=f"{frappe.request.data}\n{frappe.get_traceback()}")
         body_data = {}
 
     # -------------------------------
