@@ -84,6 +84,10 @@ app_license = "mit"
 
 # before_install = "mobile_app_360ithub.install.before_install"
 # after_install = "mobile_app_360ithub.install.after_install"
+# Runs on every update
+
+after_migrate = "mobile_app_360ithub.setup.after_migrate"
+before_uninstall = "mobile_app_360ithub.setup.before_uninstall"
 
 # Uninstallation
 # ------------
@@ -141,7 +145,14 @@ doc_events = {
  	"Comment": {
  		"after_insert": "mobile_app_360ithub.task_comments.publish_task_comment_event",
 		"on_trash": "mobile_app_360ithub.task_comments.delete_task_comment_event"
- 	}
+ 	},
+    "Task": {
+        "after_insert": "mobile_app_360ithub.task_hooks.task_after_insert",
+        "before_save": "mobile_app_360ithub.task_hooks.task_before_save",
+    },
+    "Employee Checkin": {
+        "before_insert": "mobile_app_360ithub.custom_employee_checkin.checkin_before_insert",
+    }
 }
 
 # Scheduled Tasks

@@ -286,8 +286,10 @@ def log_employee_checkin(
 		employee_id = employee.get("name")
 		branch_name = employee.get("branch")
 
-		# Validate location against branch
-		_validate_employee_location(latitude, longitude, branch_name, radius)
+		geo_fencing_applicable = frappe.db.get_value("Employee", employee_id, "geo_fencing_applicable")
+		if geo_fencing_applicable:
+			# Validate location against branch
+			_validate_employee_location(latitude, longitude, branch_name, radius)
 
 		# Determine check-in type and create log
 		log_type, action_message = _determine_log_type(employee_id)
@@ -537,6 +539,7 @@ def _create_checkin_record(
 		frappe.ValidationError: If document creation fails
 	"""
 	try:
+		
 		checkin_doc = frappe.get_doc({
 			"doctype": "Employee Checkin",
 			"employee": employee_id,

@@ -133,6 +133,7 @@ def update_expense_claim_status_and_submit(expense_claim_id, status):
 
         # Set the new approval status
         expense_claim.approval_status = status
+        expense_claim.status = "Unpaid"
         expense_claim.save()
 
         # If the Expense Claim is a Draft (docstatus 0) and the new status implies submission, submit it.
