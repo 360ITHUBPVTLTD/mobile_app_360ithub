@@ -8,7 +8,7 @@ def after_migrate():
     create_custom_fields(get_custom_fields(), ignore_validate=True)
     setup_roles()
     setup_permissions()
-    generate_bulk_attendance(["HR-EMP-00002"], 2025, 11, absent_days_list=[12,18,26])
+
 
 def before_uninstall():
     """
@@ -104,6 +104,16 @@ def get_custom_fields():
                 "insert_after": "custom_custom_lat_long",
                 "read_only": "1",
                 "is_system_generated": "0"
+            }
+        ],
+        "Attendance": [
+            {
+                "fieldname": "custom_attendance_note",
+                "label": "Attendance Note",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "read_only": "1",
+                # "is_system_generated": "0"
             }
         ]
     }
@@ -235,82 +245,85 @@ def add_permission(role, p):
 
 
 
-import frappe
-from frappe.utils import getdate
-from calendar import monthrange
 
-def generate_bulk_attendance(employee_id, year, month, absent_days_list=[]):
-    """
-    employee_id: string (e.g., "HR-EMP-0001")
-    year: int (e.g., 2025)
-    month: int (e.g., 11)
-    absent_days_list: list of integers (e.g., [4, 12, 18])
-    """
+
+# import frappe
+# from frappe.utils import getdate
+# from calendar import monthrange
+
+# def generate_bulk_attendance(employee_id, year, month, absent_days_list=[]):
+#     """
+#     employee_id: string (e.g., "HR-EMP-0001")
+#     year: int (e.g., 2025)
+#     month: int (e.g., 11)
+#     absent_days_list: list of integers (e.g., [4, 12, 18])
+#     """
     
-    # 1. Get Employee's Holiday List
-    emp_details = frappe.db.get_value("Employee", employee_id, ["holiday_list", "company", "status"], as_dict=True)
+#     # 1. Get Employee's Holiday List
+#     emp_details = frappe.db.get_value("Employee", employee_id, ["holiday_list", "company", "status"], as_dict=True)
     
-    if not emp_details:
-        print(f"❌ Employee {employee_id} not found.")
-        return
+#     if not emp_details:
+#         print(f"❌ Employee {employee_id} not found.")
+#         return
 
-    if emp_details.status != "Active":
-        print(f"⚠️ Warning: Employee {employee_id} is not Active.")
+#     if emp_details.status != "Active":
+#         print(f"⚠️ Warning: Employee {employee_id} is not Active.")
 
-    # Fetch Holiday Dates as strings
-    holidays = []
-    if emp_details.holiday_list:
-        holidays = frappe.db.get_all("Holiday", 
-            filters={"parent": emp_details.holiday_list}, 
-            pluck="holiday_date"
-        )
-        # Convert dates to string format 'YYYY-MM-DD' for comparison
-        holidays = [str(h) for h in holidays]
-        print(f"ℹ️ Found {len(holidays)} holidays in list: {emp_details.holiday_list}")
-    else:
-        print("⚠️ No Holiday List assigned to Employee. Assuming NO holidays.")
+#     # Fetch Holiday Dates as strings
+#     holidays = []
+#     if emp_details.holiday_list:
+#         holidays = frappe.db.get_all("Holiday", 
+#             filters={"parent": emp_details.holiday_list}, 
+#             pluck="holiday_date"
+#         )
+#         # Convert dates to string format 'YYYY-MM-DD' for comparison
+#         holidays = [str(h) for h in holidays]
+#         print(f"ℹ️ Found {len(holidays)} holidays in list: {emp_details.holiday_list}")
+#     else:
+#         print("⚠️ No Holiday List assigned to Employee. Assuming NO holidays.")
 
-    # 2. Loop through the month
-    # Get total days in the month (e.g., 28, 30, 31)
-    days_in_month = monthrange(year, month)[1]
+#     # 2. Loop through the month
+#     # Get total days in the month (e.g., 28, 30, 31)
+#     days_in_month = monthrange(year, month)[1]
 
-    print(f"\n🚀 Starting Attendance Generation for {employee_id} - {month}/{year}...")
+#     print(f"\n🚀 Starting Attendance Generation for {employee_id} - {month}/{year}...")
 
-    created_count = 0
+#     created_count = 0
 
-    for day in range(1, days_in_month + 1):
-        # Format Date: YYYY-MM-DD
-        current_date_obj = getdate(f"{year}-{month:02d}-{day:02d}")
-        current_date_str = str(current_date_obj)
+#     for day in range(1, days_in_month + 1):
+#         # Format Date: YYYY-MM-DD
+#         current_date_obj = getdate(f"{year}-{month:02d}-{day:02d}")
+#         current_date_str = str(current_date_obj)
 
-        # A. Check if Holiday -> SKIP
-        if current_date_str in holidays:
-            print(f"   ⏩ {current_date_str}: Holiday (Skipped)")
-            continue
+#         # A. Check if Holiday -> SKIP
+#         if current_date_str in holidays:
+#             print(f"   ⏩ {current_date_str}: Holiday (Skipped)")
+#             continue
 
-        # B. Check if Duplicate -> SKIP
-        # if frappe.db.exists("Attendance", {"employee": employee_id, "attendance_date": current_date_str, "docstatus": 1}):
-        #     print(f"   ⏩ {current_date_str}: Attendance already exists (Skipped)")
-        #     continue
+#         # B. Check if Duplicate -> SKIP
+#         # if frappe.db.exists("Attendance", {"employee": employee_id, "attendance_date": current_date_str, "docstatus": 1}):
+#         #     print(f"   ⏩ {current_date_str}: Attendance already exists (Skipped)")
+#         #     continue
 
-        # C. Determine Status (Absent vs Present)
-        status = "Absent" if day in absent_days_list else "Present"
+#         # C. Determine Status (Absent vs Present)
+#         status = "Absent" if day in absent_days_list else "Present"
 
-        # D. Create and Submit Attendance
-        try:
-            doc = frappe.get_doc({
-                "doctype": "Attendance",
-                "employee": employee_id,
-                "attendance_date": current_date_str,
-                "status": status,
-                "company": emp_details.company,
-                "docstatus": 1  # 1 = Submitted directly
-            })
-            doc.insert(ignore_permissions=True)
-            print(f"   ✅ {current_date_str}: Marked {status}")
-            created_count += 1
-        except Exception as e:
-            print(f"   ❌ {current_date_str}: Failed - {str(e)}")
+#         # D. Create and Submit Attendance
+#         try:
+#             doc = frappe.get_doc({
+#                 "doctype": "Attendance",
+#                 "employee": employee_id,
+#                 "attendance_date": current_date_str,
+#                 "status": status,
+#                 "company": emp_details.company,
+#                 "docstatus": 1  # 1 = Submitted directly
+#             })
+#             doc.insert(ignore_permissions=True)
+#             print(f"   ✅ {current_date_str}: Marked {status}")
+#             created_count += 1
+#         except Exception as e:
+#             print(f"   ❌ {current_date_str}: Failed - {str(e)}")
 
-    frappe.db.commit()
-    print(f"\n🎉 Done! Created {created_count} attendance records.")
+#     frappe.db.commit()
+#     print(f"\n🎉 Done! Created {created_count} attendance records.")
+
