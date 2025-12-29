@@ -3,7 +3,7 @@ from frappe import _
 from typing import Any, Dict
 from frappe.utils.password import update_password
 
-
+@frappe.whitelist()
 def get_current_user_details() -> Dict[str, Any]:
 	"""Get current user details with proper error handling.
 
@@ -25,6 +25,8 @@ def get_current_user_details() -> Dict[str, Any]:
 		frappe.throw(_("Failed to fetch user details"))
 
 
+
+@frappe.whitelist()
 def change_password(old_password: str, new_password: str) -> None:
 	"""Change the password of the current user.
 

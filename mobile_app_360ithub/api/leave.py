@@ -10,6 +10,7 @@ from hrms.hr.report.employee_leave_balance.employee_leave_balance import (
 )
 
 
+@frappe.whitelist()
 def get_leave_data(year: Optional[int] = None) -> List[Dict[str, Any]]:
 	"""Get leave data for the current employee for a specific year.
 
@@ -47,7 +48,7 @@ def get_leave_data(year: Optional[int] = None) -> List[Dict[str, Any]]:
 		frappe.log_error(f"Error fetching leave data: {str(e)}")
 		frappe.throw(_("Failed to fetch leave data {0}").format(str(e)))
 
-
+@frappe.whitelist()
 def get_employee_leave_data(
 	employees: List[Dict], to_date: str, from_date: str
 ) -> List[Dict[str, Any]]:

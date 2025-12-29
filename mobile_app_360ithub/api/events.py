@@ -1,7 +1,7 @@
 import frappe
 from datetime import datetime, timedelta
 
-
+@frappe.whitelist()
 def get_employees_with_birthday_in_current_year():
 	current_date = datetime.now().date()
 	one_week_before = current_date - timedelta(days=7)

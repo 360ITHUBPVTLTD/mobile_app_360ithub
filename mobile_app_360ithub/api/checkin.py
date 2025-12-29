@@ -5,7 +5,7 @@ import math
 from typing import Any, Dict, Optional, Tuple
 from .utils import get_employee_by_user, get_last_log_details
 
-
+@frappe.whitelist()
 def log_employee_checkin(
 	latitude: Optional[float] = None,
 	longitude: Optional[float] = None,
@@ -55,6 +55,7 @@ def log_employee_checkin(
 		frappe.throw(_("Failed to log check-in {0}").format(str(e)))
 
 
+@frappe.whitelist()
 def _validate_checkin_params(
 	latitude: Optional[float], longitude: Optional[float], radius: Optional[float]
 ) -> Tuple[float, float, Optional[float]]:

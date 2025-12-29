@@ -1,7 +1,7 @@
 import frappe
 import calendar
 
-
+@frappe.whitelist()
 def get_employee_attendance(emp_id, month, year):
 	# Validate inputs
 	if not emp_id or not month or not year:

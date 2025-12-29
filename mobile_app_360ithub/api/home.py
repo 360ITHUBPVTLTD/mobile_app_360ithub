@@ -4,6 +4,8 @@ from typing import Any, Dict
 from .utils import get_employee_by_user, get_last_log_details
 
 
+
+@frappe.whitelist()
 def get_home_page() -> Dict[str, Any]:
 	"""Get home page data including employee and log details.
 

@@ -1,5 +1,7 @@
 import frappe
 
+
+@frappe.whitelist()
 def get_employee_by_user(user, fields=["*"]):
     if isinstance(fields, str):
         fields = [fields]
