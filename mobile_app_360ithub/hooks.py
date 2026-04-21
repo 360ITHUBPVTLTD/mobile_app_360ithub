@@ -145,6 +145,20 @@ doc_events = {
     "Task": {
         "after_insert": "mobile_app_360ithub.task_hooks.task_after_insert",
         "before_save": "mobile_app_360ithub.task_hooks.task_before_save",
+        "on_update": "mobile_app_360ithub.fcm_notification.send_task_notification"
+    },
+    "Leave Application": {
+        "after_insert": "mobile_app_360ithub.fcm_notification.send_leave_notification",
+        "on_submit": "mobile_app_360ithub.fcm_notification.notify_employee_on_finish",
+        # "on_update": "mobile_app_360ithub.fcm_notification.notify_employee_on_finish" 
+    },
+    "Expense Claim": {
+        "after_insert": "mobile_app_360ithub.fcm_notification.send_expense_notification",
+        "on_submit": "mobile_app_360ithub.fcm_notification.notify_employee_on_expense_finish",
+        # "on_update": "mobile_app_360ithub.fcm_notification.notify_employee_on_expense_finish"
+    },
+    "Event Activity": {
+        "after_insert": "mobile_app_360ithub.fcm_notification.send_activity_creation_notification"
     }
 }
 
@@ -168,6 +182,18 @@ doc_events = {
 # 		"mobile_app_360ithub.tasks.monthly"
 # 	],
 # }
+scheduler_events = {
+    "cron": {
+        "0 9 * * *": [
+            "mobile_app_360ithub.fcm_notification.send_daily_task_summary"
+        ],
+        "15 9 * * *": [
+            "mobile_app_360ithub.fcm_notification.send_daily_activity_summary"
+        ]
+    }
+}
+
+
 
 # Testing
 # -------

@@ -18,10 +18,14 @@ def task_before_save(doc, method):
             share_task_with_owner(docname=doc.name, owner=doc.task_owner)
 
 
+from mobile_app_360ithub.fcm_notification import send_task_notification
+
+
 def task_after_insert(doc, method):
     """After insert — share with the new owner if set."""
     if doc.task_owner:
         share_task_with_owner(docname=doc.name, owner=doc.task_owner)
+    send_task_notification(doc, method="after_insert")
 
 
 def downgrade_old_owner_share(docname, old_owner):
