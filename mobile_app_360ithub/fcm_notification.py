@@ -264,39 +264,127 @@ def send_task_notification(doc, method=None):
         frappe.log_error("FCM Task Notification Failed", frappe.get_traceback())
 
 
+# def send_task_notification(doc, method=None):
+#     """
+#     Notifies Task Owner on creation and on reassignment.
+#     """
+#     if not doc.task_owner:
+#         return
+
+#     # --- DETERMINING IF WE SHOULD SEND ---
+#     should_send = False
+
+#     if method == "after_insert":
+#         # Always send on first creation
+#         should_send = True
+    
+#     elif method == "on_update":
+#         # Get the document state BEFORE the save button was clicked
+#         prev_doc = doc.get_doc_before_save()
+        
+#         # If there was a previous state AND the owner is different from the current one
+#         if prev_doc and prev_doc.task_owner != doc.task_owner:
+#             should_send = True
+        
+#         # Fallback for some workflows where get_doc_before_save is null
+#         elif not prev_doc:
+#             db_owner = frappe.db.get_value("Task", doc.name, "task_owner")
+#             if db_owner != doc.task_owner:
+#                 should_send = True
+
+#     if not should_send:
+#         return
+
+#     # --- START NOTIFICATION LOGIC ---
+#     recipient_email = doc.task_owner
+
+#     # Fetch token
+#     employee_data = frappe.db.get_value("Employee", 
+#         {"user_id": recipient_email, "status": "Active"}, 
+#         ["custom_fcm_token"], as_dict=True)
+
+#     if not employee_data or not employee_data.custom_fcm_token:
+#         return
+
+#     # Content
+#     title_prefix = _("New Task") if method == "after_insert" else _("Task Reassigned")
+#     title = f"{title_prefix}: {doc.subject}"
+    
+#     body = _("Priority: {0}\nStatus: {1}").format(
+#         doc.priority,
+#         doc.status
+#     )
+
+#     try:
+#         send_fcm_notification(
+#             token=employee_data.custom_fcm_token,
+#             title=title,
+#             body=body,
+#             doctype="Task",
+#             task_id=doc.name,
+#             user=recipient_email,
+#             notification_type="TaskAssignment"
+#         )
+#     except Exception:
+#         frappe.log_error("FCM Task Update Error", frappe.get_traceback())
+
 def send_task_notification(doc, method=None):
     """
-    Notifies Task Owner on creation and on reassignment.
+    Notifies Task Owner on creation, reassignment, and completion.
     """
     if not doc.task_owner:
         return
 
     # --- DETERMINING IF WE SHOULD SEND ---
     should_send = False
+    notification_event = None # To track which message to send
 
     if method == "after_insert":
-        # Always send on first creation
         should_send = True
+        notification_event = "created"
     
     elif method == "on_update":
-        # Get the document state BEFORE the save button was clicked
         prev_doc = doc.get_doc_before_save()
         
-        # If there was a previous state AND the owner is different from the current one
+        # 1. Check for Reassignment
         if prev_doc and prev_doc.task_owner != doc.task_owner:
             should_send = True
+            notification_event = "reassigned"
         
-        # Fallback for some workflows where get_doc_before_save is null
+        # 2. Check for Completion (New Logic)
+        elif doc.status == "Completed" and (not prev_doc or prev_doc.status != "Completed"):
+            should_send = True
+            notification_event = "completed"
+        
+        # Fallback for owner check if get_doc_before_save is missing
         elif not prev_doc:
             db_owner = frappe.db.get_value("Task", doc.name, "task_owner")
             if db_owner != doc.task_owner:
                 should_send = True
+                notification_event = "reassigned"
 
     if not should_send:
         return
 
     # --- START NOTIFICATION LOGIC ---
     recipient_email = doc.task_owner
+    
+    # Content Logic based on the event
+    if notification_event == "created":
+        title_prefix = _("New Task")
+    elif notification_event == "reassigned":
+        title_prefix = _("Task Reassigned")
+    elif notification_event == "completed":
+        title_prefix = _("Task Completed")
+    else:
+        title_prefix = _("Task Update")
+
+    title = f"{title_prefix}: {doc.subject}"
+    
+    body = _("Priority: {0}\nStatus: {1}").format(
+        doc.priority,
+        doc.status
+    )
 
     # Fetch token
     employee_data = frappe.db.get_value("Employee", 
@@ -306,15 +394,6 @@ def send_task_notification(doc, method=None):
     if not employee_data or not employee_data.custom_fcm_token:
         return
 
-    # Content
-    title_prefix = _("New Task") if method == "after_insert" else _("Task Reassigned")
-    title = f"{title_prefix}: {doc.subject}"
-    
-    body = _("Priority: {0}\nStatus: {1}").format(
-        doc.priority,
-        doc.status
-    )
-
     try:
         send_fcm_notification(
             token=employee_data.custom_fcm_token,
@@ -323,12 +402,10 @@ def send_task_notification(doc, method=None):
             doctype="Task",
             task_id=doc.name,
             user=recipient_email,
-            notification_type="TaskAssignment"
+            notification_type="TaskUpdate" # Changed to generic TaskUpdate
         )
     except Exception:
         frappe.log_error("FCM Task Update Error", frappe.get_traceback())
-
-
 
 
 from frappe.utils import today, getdate
