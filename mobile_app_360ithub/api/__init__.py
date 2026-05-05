@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import flt, cint, getdate, get_first_day, get_last_day, now, nowdate
+from frappe.utils import flt, cint, getdate, get_first_day, get_last_day, now, nowdate, now_datetime
 from .utils import get_employee_by_user, get_last_log_details
 import math
 from typing import Dict, List, Optional, Any
@@ -547,11 +547,27 @@ def _create_checkin_record(
 		})
 
 		checkin_doc.insert(ignore_permissions=True)
+		_update_shift_last_sync(employee_id)
 		return checkin_doc
 
 	except Exception as e:
 		frappe.log_error(f"Error creating check-in record: {str(e)}")
 		frappe.throw(_("Failed to log check-in: {0}").format(str(e)))
+
+
+
+def _update_shift_last_sync(employee_name):
+    # Fetch the employee record
+    employee = frappe.db.get_value("Employee", employee_name, "default_shift")
+
+    if employee:  # Check if the employee has a default shift
+        frappe.db.set_value(
+            "Shift Type",
+            employee,
+            "last_sync_of_checkin",
+            now_datetime(),
+        )
+
 
 
 def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-05 12:40:18.902783",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "auto_mark_attendance_based_on_shift_section",
+  "auto_mark_attendance",
+  "shift_type",
+  "professional_tax_applicable"
+ ],
+ "fields": [
+  {
+   "fieldname": "auto_mark_attendance_based_on_shift_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Mark Attendance Based On Shift"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_mark_attendance",
+   "fieldtype": "Check",
+   "label": "Auto Mark Attendance"
+  },
+  {
+   "fieldname": "shift_type",
+   "fieldtype": "Link",
+   "label": "Shift Type",
+   "options": "Shift Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "professional_tax_applicable",
+   "fieldtype": "Check",
+   "label": "Professional Tax applicable"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-05 12:51:51.502838",
+ "modified_by": "Administrator",
+ "module": "Mobile App 360Ithub",
+ "name": "Mobile App Admin Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
