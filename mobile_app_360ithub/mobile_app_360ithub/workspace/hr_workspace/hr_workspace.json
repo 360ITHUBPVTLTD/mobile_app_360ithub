@@ -1,0 +1,181 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"JvpMuxVOc3\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Employee Details</b></span>\",\"col\":12}},{\"id\":\"Qrow3l6PJH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Holiday List\",\"col\":3}},{\"id\":\"8CPLEjRI2t\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Shift Type\",\"col\":3}},{\"id\":\"dRePXGfY6b\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch\",\"col\":3}},{\"id\":\"VRPOPr3ut9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Department\",\"col\":3}},{\"id\":\"mTKySKpkwS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Designation\",\"col\":3}},{\"id\":\"Zher1g71H5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":3}},{\"id\":\"N-xZH6WOsr\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"13tZ5yVZ5l\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Attendance and Salary</b></span>\",\"col\":12}},{\"id\":\"daDHUcNh9m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Attendance\",\"col\":3}},{\"id\":\"r34qXNN4aw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Checkin\",\"col\":3}},{\"id\":\"0WvNtpn8ad\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Monthly Attendance Report\",\"col\":3}},{\"id\":\"UvSOGkbmXM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Salary  Report\",\"col\":3}},{\"id\":\"Ph2H2a7TpP\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"d5iuyz3e5W\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Leave Policy and Leaves</b></span>\",\"col\":12}},{\"id\":\"u1kJGFwXfg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Leave Type\",\"col\":3}},{\"id\":\"onyqqGQGXV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Leave Period\",\"col\":3}},{\"id\":\"dIMTmUNJ1c\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Leave Policy\",\"col\":3}},{\"id\":\"Zcaw297MEN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Leave Policy Assignment\",\"col\":3}},{\"id\":\"TSdDAl2HEj\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Leave Application\",\"col\":3}},{\"id\":\"O7RpclAOqZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Leave Balance Summary\",\"col\":3}},{\"id\":\"sT-Rq8vz6v\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"mFITBjRbIJ\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Absent Table HR\",\"col\":12}},{\"id\":\"7OaMCBxBfF\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Today Team Presence\",\"col\":12}},{\"id\":\"dX6jLeOuv4\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Pending Leave Applications HR\",\"col\":12}},{\"id\":\"7MHoE_fMOU\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Approved Leaves HR\",\"col\":12}}]",
+ "creation": "2026-05-05 13:04:09.643537",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Absent Table HR",
+   "label": "Absent Table HR"
+  },
+  {
+   "custom_block_name": "Today Team Presence",
+   "label": "Today Team Presence"
+  },
+  {
+   "custom_block_name": "Pending Leave Applications HR",
+   "label": "Pending Leave Applications HR"
+  },
+  {
+   "custom_block_name": "Approved Leaves HR",
+   "label": "Approved Leaves HR"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "HR Workspace",
+ "links": [],
+ "modified": "2026-05-05 13:04:09.643537",
+ "modified_by": "Administrator",
+ "module": "Mobile App 360Ithub",
+ "name": "HR Workspace",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "HR User"
+  }
+ ],
+ "sequence_id": 39.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Attendance",
+   "link_to": "Attendance",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Leave Policy",
+   "link_to": "Leave Policy",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "Report Builder",
+   "label": "Employee",
+   "link_to": "Employee",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Employee Leave Balance Summary",
+   "link_to": "Employee Leave Balance Summary",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "Report Builder",
+   "label": "Leave Application",
+   "link_to": "Leave Application",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Employee Salary  Report",
+   "link_to": "Employee Salary  Report",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Department",
+   "link_to": "Department",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Designation",
+   "link_to": "Designation",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Monthly Attendance Report",
+   "link_to": "Monthly Attendance Sheet",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Leave Policy Assignment",
+   "link_to": "Leave Policy Assignment",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "Report Builder",
+   "label": "Shift Type",
+   "link_to": "Shift Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Branch",
+   "link_to": "Branch",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Leave Type",
+   "link_to": "Leave Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "Report Builder",
+   "label": "Employee Checkin",
+   "link_to": "Employee Checkin",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Leave Period",
+   "link_to": "Leave Period",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "Report Builder",
+   "label": "Holiday List",
+   "link_to": "Holiday List",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "HR Workspace"
+}

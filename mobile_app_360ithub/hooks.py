@@ -138,6 +138,16 @@ app_license = "mit"
 # Hook on document methods and events
 
 doc_events = {
+    "Employee Checkin": {
+        "before_insert": "mobile_app_360ithub.custom_employee_checkin.checkin_before_insert",
+    },
+    "Attendance": {
+        "before_submit": "mobile_app_360ithub.custom_attendance.auto_present_logic"
+    },
+    "Employee": {
+        "before_save": "mobile_app_360ithub.custom_employee.before_save_employee",
+    },
+   
  	"Comment": {
  		"after_insert": "mobile_app_360ithub.task_comments.publish_task_comment_event",
 		"on_trash": "mobile_app_360ithub.task_comments.delete_task_comment_event"
@@ -150,16 +160,32 @@ doc_events = {
     "Leave Application": {
         "after_insert": "mobile_app_360ithub.fcm_notification.send_leave_notification",
         "on_submit": "mobile_app_360ithub.fcm_notification.notify_employee_on_finish",
+        "before_submit": "mobile_app_360ithub.custom_employee.validate_leave_approver_on_submit",
         # "on_update": "mobile_app_360ithub.fcm_notification.notify_employee_on_finish" 
     },
     "Expense Claim": {
         "after_insert": "mobile_app_360ithub.fcm_notification.send_expense_notification",
         "on_submit": "mobile_app_360ithub.fcm_notification.notify_employee_on_expense_finish",
+        "before_insert": "mobile_app_360ithub.custom_expense_claim.before_insert_expense_claim",
         # "on_update": "mobile_app_360ithub.fcm_notification.notify_employee_on_expense_finish"
     },
     "Event Activity": {
         "after_insert": "mobile_app_360ithub.fcm_notification.send_activity_creation_notification"
-    }
+    },
+     "Attendance Request": {
+        # "on_submit": "mobile_app_360ithub.custom_hr.fix_checkin_skip_logic",
+        # "before_validate": "mobile_app_360ithub.custom_hr.clear_attendance_request_conflict",
+        "validate": "mobile_app_360ithub.custom_attendance_request.validate",
+        "before_submit": "mobile_app_360ithub.custom_attendance_request.before_submit",
+        "on_submit": "mobile_app_360ithub.custom_attendance_request.on_submit",
+        "on_cancel": "mobile_app_360ithub.custom_attendance_request.on_cancel",
+        "on_update": "mobile_app_360ithub.custom_hr.auto_submit_on_approval",
+        "validate": [
+            "mobile_app_360ithub.custom_hr.validate_approver_authority"
+        ],
+        # "after_insert": "mobile_app_360ithub.custom_hr.handle_arq_email_triggers"
+    },
+  
 }
 
 # Scheduled Tasks
@@ -189,8 +215,19 @@ scheduler_events = {
         ],
         "15 9 * * *": [
             "mobile_app_360ithub.fcm_notification.send_daily_activity_summary"
+        ],
+        "00 23 * * *":
+            [
+            "mobile_app_360ithub.custom_attendance.checkin_out_for_missed_logs"
+            ],
+        "30 23 * * *": [
+            "mobile_app_360ithub.custom_attendance.run_daily_auto_attendance"
         ]
-    }
+    },
+    "daily": [
+		"mobile_app_360ithub.custom_task.daily_overdue_status_update",
+        # "clarity_360ithub.custom_hr.mark_management_attendance"
+	],
 }
 
 
@@ -233,7 +270,32 @@ scheduler_events = {
 # before_job = ["mobile_app_360ithub.utils.before_job"]
 # after_job = ["mobile_app_360ithub.utils.after_job"]
 
+custom_html_blocks_dashboard = [
+    "Month Brithday",
+    "HTML for checkin",
+    "Today Team Presence",
+    "Approved Leaves HR",
+    "Pending Leave Applications HR",
+    "Absent Table HR",
+    "Absent Table Employee",
+    "Pending Leave Applications Employee",
+    "Approved Leaves Employee",
+    "Absent Table Employee 13mar",
+    "Pending Leave Applications Employee 13 mar",
+    "Approved Leaves Employee 13mar",
+    "Absent Table HR 13mar",
+    "Pending / To-Approve On-Duty",
+    "Pending Employee OT"
+        
+
+]
+
+
 fixtures = [
+    {
+        "dt": "Custom HTML Block", 
+        "filters": [["name", "in", custom_html_blocks_dashboard]]
+    },
     {
         "doctype": "Custom Field",
         "filters": [
