@@ -95,7 +95,7 @@ def biometric_login(**kwargs):
             "skip_auto_attendance": 0
         })
         checkin.insert(ignore_permissions=True)
-
+        update_shift_last_sync(employee)
         # ---------------------------------------
         # SUCCESS RESPONSE (Strict Format)
         # ---------------------------------------
@@ -125,6 +125,18 @@ def biometric_login(**kwargs):
         # Return generic error to device, detailed error is in Integration Request
         return {"status": False, "message": "Failed to create check-in"}
 
+
+def update_shift_last_sync(employee_name):
+    # Fetch the employee record
+    employee = frappe.db.get_value("Employee", employee_name, "default_shift")
+
+    if employee:  # Check if the employee has a default shift
+        frappe.db.set_value(
+            "Shift Type",
+            employee,
+            "last_sync_of_checkin",
+            now_datetime(),
+        )
 
 # --- Helper Functions ---
 
@@ -169,6 +181,20 @@ def calculate_log_type(employee):
     if not last_log:
         return "IN" # First punch of the day is IN
     return "OUT" if last_log == "IN" else "IN"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # @frappe.whitelist(allow_guest=True)
