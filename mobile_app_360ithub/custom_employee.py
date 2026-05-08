@@ -483,10 +483,11 @@ from frappe import _
 def validate_leave_approver_on_submit(doc, method=None):
     """
     Restricts submission of Leave Application to the designated leave_approver
-    or users with the 'SCHITS Administrator' role.
+    or users with the 'SCHITS Administrator' or 'HR Manager' role.
     """
-    # 1. Allow if user has the SCHITS Administrator role
-    if "SCHITS Administrator" in frappe.get_roles():
+    # 1. Allow if user has the SCHITS Administrator or HR Manager role
+    user_roles = frappe.get_roles()
+    if "HR Manager" in user_roles:
         return
 
     # 2. If current user is NOT the designated leave approver, throw error
@@ -495,10 +496,9 @@ def validate_leave_approver_on_submit(doc, method=None):
         approver_name = frappe.db.get_value("User", doc.leave_approver, "full_name") or doc.leave_approver
         
         frappe.throw(
-            _("Only the designated leave approver ({0}) is authorized to submit this application.")
+            _("Only the designated leave approver ({0}), HR Manager, or Administrator is authorized to submit/approve this application.")
             .format(approver_name)
         )
-
 # @frappe.whitelist()
 # def get_my_absents_formatted():
 #     # Use your existing absent logic
