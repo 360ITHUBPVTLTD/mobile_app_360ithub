@@ -131,22 +131,22 @@ def before_submit(doc, method):
     current_user = frappe.session.user
     user_roles = frappe.get_roles(current_user)
 
+    # Authorized bypass roles
+    privileged_roles = ["Leave Approver", "System Manager", "HR Manager"]
+    
     is_approver = (current_user == doc.custom_attendance_request_approver)
-    is_hr = ("Leave Approver" in user_roles or "System Manager" in user_roles)
+    # Checks if any of the privileged roles are present in the user's roles
+    is_privileged = any(role in user_roles for role in privileged_roles)
 
-    if not (is_approver or is_hr):
-        frappe.throw(_("Only the assigned Approver or HR can submit this Attendance Request."))
+    if not (is_approver or is_privileged):
+        frappe.throw(_("Only the assigned Approver, HR Manager, or HR can submit this Attendance Request."))
 
-    # 3. Data Integrity: Ensure custom status is Approved
-    # if doc.custom_status != "Approved":
-    #     frappe.throw(_("Attendance Request can only be submitted if Status is 'Approved'."))
-
+    # 3. Data Integrity: Ensure custom status is Approved or Rejected
     if doc.custom_status not in ["Approved", "Rejected"]:
         frappe.throw(_("Attendance Request can only be submitted if Status is 'Approved' or 'Rejected'."))
 
     if not doc.custom_check_in_time or not doc.custom_check_out_time:
         frappe.throw(_("Check-in and Check-out times are mandatory for submission."))
-
 
 def on_submit(doc, method):
     """
