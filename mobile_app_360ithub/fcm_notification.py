@@ -534,6 +534,8 @@ def send_task_notification(doc, method=None):
         try:
             send_fcm_notification(
                 token=emp.custom_fcm_token,
+                doctype="Task",
+                task_id=doc.name,
                 title=f"{event_label}: {doc.subject}",
                 body=_("Status: {0} | Due: {1}").format(doc.status, due_date),
                 user=doc.task_owner
