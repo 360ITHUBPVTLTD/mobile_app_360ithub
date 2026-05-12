@@ -217,51 +217,127 @@ def notify_employee_on_expense_finish(doc, method=None):
 
 # Add Task notification logic at the end of fcm_notification.py
 
-def send_task_notification(doc, method=None):
-    """
-    Notifies the Task Owner when a new task is created and assigned.
-    """
-    if not doc.task_owner:
-        return
+# def send_task_notification(doc, method=None):
+#     """
+#     Notifies the Task Owner when a new task is created and assigned.
+#     """
+#     if not doc.task_owner:
+#         return
 
-    recipient_email = doc.task_owner
+#     recipient_email = doc.task_owner
 
-    # 1. Fetch recipient FCM token from Employee doctype
-    employee_data = frappe.db.get_value("Employee", 
-        {"user_id": recipient_email, "status": "Active"}, 
-        ["custom_fcm_token", "employee_name"], 
-        as_dict=True
-    )
+#     # 1. Fetch recipient FCM token from Employee doctype
+#     employee_data = frappe.db.get_value("Employee", 
+#         {"user_id": recipient_email, "status": "Active"}, 
+#         ["custom_fcm_token", "employee_name"], 
+#         as_dict=True
+#     )
 
-    if not employee_data or not employee_data.custom_fcm_token:
-        # Optional: Log if token is missing
-        # frappe.log_error("FCM Task Error", f"No token found for user: {recipient_email}")
-        return
+#     if not employee_data or not employee_data.custom_fcm_token:
+#         # Optional: Log if token is missing
+#         # frappe.log_error("FCM Task Error", f"No token found for user: {recipient_email}")
+#         return
 
-    # 2. Prepare Detailed Content
-    formatted_start = format_date(doc.exp_start_date, "dd-MMM-yyyy") if doc.exp_start_date else "Not set"
+#     # 2. Prepare Detailed Content
+#     formatted_start = format_date(doc.exp_start_date, "dd-MMM-yyyy") if doc.exp_start_date else "Not set"
     
-    title = _("New Task Assigned: {0}").format(doc.subject)
-    body = _("You have been assigned a new task.\nPriority: {0}\nExpected Start: {1}\nProject: {2}").format(
-        doc.priority or "Normal",
-        formatted_start,
-        doc.project or _("No Project")
-    )
+#     title = _("New Task Assigned: {0}").format(doc.subject)
+#     body = _("You have been assigned a new task.\nPriority: {0}\nExpected Start: {1}\nProject: {2}").format(
+#         doc.priority or "Normal",
+#         formatted_start,
+#         doc.project or _("No Project")
+#     )
 
-    # 3. Send Notification
-    try:
-        send_fcm_notification(
-            token=employee_data.custom_fcm_token,
-            title=title,
-            body=body,
-            doctype="Task",
-            task_id=doc.name,
-            user_doctype="User",
-            user=recipient_email,
-            notification_type="TaskAssignment"
-        )
-    except Exception:
-        frappe.log_error("FCM Task Notification Failed", frappe.get_traceback())
+#     # 3. Send Notification
+#     try:
+#         send_fcm_notification(
+#             token=employee_data.custom_fcm_token,
+#             title=title,
+#             body=body,
+#             doctype="Task",
+#             task_id=doc.name,
+#             user_doctype="User",
+#             user=recipient_email,
+#             notification_type="TaskAssignment"
+#         )
+#     except Exception:
+#         frappe.log_error("FCM Task Notification Failed", frappe.get_traceback())
+
+
+
+# from frappe.utils import format_date, html2text
+# from frappe import _
+
+# def send_task_notification(doc, method=None):
+#     """
+#     Notifies the Task Owner via FCM and WhatsApp with Task details.
+#     """
+#     if not doc.task_owner:
+#         return
+
+#     recipient_email = doc.task_owner
+
+#     # 1. Fetch FCM token and Cell Number from Employee doctype
+#     employee_data = frappe.db.get_value("Employee", 
+#         {"user_id": recipient_email, "status": "Active"}, 
+#         ["custom_fcm_token", "employee_name", "cell_number"], 
+#         as_dict=True
+#     )
+
+#     if not employee_data:
+#         return
+
+#     # 2. Prepare Detailed Content
+#     formatted_start = format_date(doc.exp_start_date, "dd-MMM-yyyy") if doc.exp_start_date else "Not set"
+#     formatted_end = format_date(doc.exp_end_date, "dd-MMM-yyyy") if doc.exp_end_date else "Not set"
+    
+#     # Convert HTML description to plain text and limit length
+#     plain_description = html2text(doc.description or "")[:150] + "..." if doc.description else "No description"
+    
+#     title = _("Task Notification: {0}").format(doc.subject)
+    
+#     # Content body used for FCM
+#     body = _("Priority: {0}\nDue Date: {1}\nComp. By: {2}\nDesc: {3}").format(
+#         doc.priority or "Normal",
+#         formatted_end,
+#         doc.completed_by or "Not completed",
+#         plain_description
+#     )
+
+#     # 3. Send FCM Notification (Existing)
+#     if employee_data.custom_fcm_token:
+#         try:
+#             send_fcm_notification(
+#                 token=employee_data.custom_fcm_token,
+#                 title=title,
+#                 body=body,
+#                 doctype="Task",
+#                 task_id=doc.name,
+#                 user_doctype="User",
+#                 user=recipient_email,
+#                 notification_type="TaskAssignment"
+#             )
+#         except Exception:
+#             frappe.log_error("FCM Task Notification Failed", frappe.get_traceback())
+
+#     # 4. Send WhatsApp Notification (Clean Design)
+#     if employee_data.get("cell_number"):
+#         try:
+#             wa_message = (
+#                 f"*Task:* {doc.subject}\n"
+#                 f"*Priority:* {doc.priority or 'Normal'}\n"
+#                 f"*Due Date:* {formatted_end}\n"
+#                 f"*Completed By:* {doc.completed_by or '--'}\n"
+#                 f"*Description:* {plain_description}"
+#             )
+            
+#             send_custom_whatsapp_message(
+#                 mobile_number=employee_data.cell_number,
+#                 message=wa_message
+#             )
+#         except Exception:
+#             frappe.log_error("WhatsApp Task Notification Failed", frappe.get_traceback())
+
 
 
 # def send_task_notification(doc, method=None):
@@ -328,96 +404,257 @@ def send_task_notification(doc, method=None):
 #     except Exception:
 #         frappe.log_error("FCM Task Update Error", frappe.get_traceback())
 
+# def send_task_notification(doc, method=None):
+#     """
+#     Notifies Task Owner on creation, reassignment, and completion.
+#     """
+#     if not doc.task_owner:
+#         return
+
+#     # --- DETERMINING IF WE SHOULD SEND ---
+#     should_send = False
+#     notification_event = None # To track which message to send
+
+#     if method == "after_insert":
+#         should_send = True
+#         notification_event = "created"
+    
+#     elif method == "on_update":
+#         prev_doc = doc.get_doc_before_save()
+        
+#         # 1. Check for Reassignment
+#         if prev_doc and prev_doc.task_owner != doc.task_owner:
+#             should_send = True
+#             notification_event = "reassigned"
+        
+#         # 2. Check for Completion (New Logic)
+#         elif doc.status == "Completed" and (not prev_doc or prev_doc.status != "Completed"):
+#             should_send = True
+#             notification_event = "completed"
+        
+#         # Fallback for owner check if get_doc_before_save is missing
+#         elif not prev_doc:
+#             db_owner = frappe.db.get_value("Task", doc.name, "task_owner")
+#             if db_owner != doc.task_owner:
+#                 should_send = True
+#                 notification_event = "reassigned"
+
+#     if not should_send:
+#         return
+
+#     # --- START NOTIFICATION LOGIC ---
+#     recipient_email = doc.task_owner
+    
+#     # Content Logic based on the event
+#     if notification_event == "created":
+#         title_prefix = _("New Task")
+#     elif notification_event == "reassigned":
+#         title_prefix = _("Task Reassigned")
+#     elif notification_event == "completed":
+#         title_prefix = _("Task Completed")
+#     else:
+#         title_prefix = _("Task Update")
+
+#     title = f"{title_prefix}: {doc.subject}"
+    
+#     body = _("Priority: {0}\nStatus: {1}").format(
+#         doc.priority,
+#         doc.status
+#     )
+
+#     # Fetch token
+#     employee_data = frappe.db.get_value("Employee", 
+#         {"user_id": recipient_email, "status": "Active"}, 
+#         ["custom_fcm_token"], as_dict=True)
+
+#     if not employee_data or not employee_data.custom_fcm_token:
+#         return
+
+#     try:
+#         send_fcm_notification(
+#             token=employee_data.custom_fcm_token,
+#             title=title,
+#             body=body,
+#             doctype="Task",
+#             task_id=doc.name,
+#             user=recipient_email,
+#             notification_type="TaskUpdate" # Changed to generic TaskUpdate
+#         )
+#     except Exception:
+#         frappe.log_error("FCM Task Update Error", frappe.get_traceback())
+
+
+# CHANGE: Import strip_html instead of html2text
+import frappe
+from frappe.utils import format_date, strip_html
+from frappe import _
+from webtoolex_whatsapp.webtoolex_whatsapp.doctype.whatsapp_instance.whatsapp_instance import send_custom_whatsapp_message
+
 def send_task_notification(doc, method=None):
-    """
-    Notifies Task Owner on creation, reassignment, and completion.
-    """
     if not doc.task_owner:
         return
 
-    # --- DETERMINING IF WE SHOULD SEND ---
-    should_send = False
-    notification_event = None # To track which message to send
+    # Fetch settings from Admin Settings Single Doctype
+    settings = frappe.get_cached_doc("Admin Settings")
+
+    # 1. Determine Event type
+    notification_event = None
+    prev_doc = doc.get_doc_before_save() if method == "on_update" else None
 
     if method == "after_insert":
-        should_send = True
         notification_event = "created"
-    
     elif method == "on_update":
-        prev_doc = doc.get_doc_before_save()
-        
-        # 1. Check for Reassignment
         if prev_doc and prev_doc.task_owner != doc.task_owner:
-            should_send = True
             notification_event = "reassigned"
-        
-        # 2. Check for Completion (New Logic)
         elif doc.status == "Completed" and (not prev_doc or prev_doc.status != "Completed"):
-            should_send = True
             notification_event = "completed"
+
+    if not notification_event:
+        return
+
+    # 2. Get Employee Notification Data
+    emp = frappe.db.get_value("Employee", {"user_id": doc.task_owner, "status": "Active"}, 
+        ["custom_fcm_token", "cell_number"], as_dict=True)
+    
+    if not emp: return
+
+    # Prepare Data
+    due_date = format_date(doc.exp_end_date, "dd-MMM-yyyy") if doc.exp_end_date else "--"
+    description = strip_html(doc.description or "")[:120].strip() + ".."
+    
+    prefix_map = {
+        "created": _("New Task Assigned"),
+        "reassigned": _("Task Reassigned"),
+        "completed": _("Task Completed")
+    }
+    event_label = prefix_map.get(notification_event, "Task Update")
+
+    # 3. Send FCM
+    if emp.custom_fcm_token:
+        try:
+            send_fcm_notification(
+                token=emp.custom_fcm_token,
+                title=f"{event_label}: {doc.subject}",
+                body=_("Status: {0} | Due: {1}").format(doc.status, due_date),
+                user=doc.task_owner
+            )
+        except: pass
+
+    # 4. Send WhatsApp with Admin Settings Check
+    if settings.enable_whatsapp and emp.cell_number:
+        # Toggle Logic
+        wa_allowed = False
+        if notification_event in ["created", "reassigned"] and settings.send_on_task_creation:
+            wa_allowed = True
+        elif notification_event == "completed" and settings.send_on_task_completion:
+            wa_allowed = True
         
-        # Fallback for owner check if get_doc_before_save is missing
-        elif not prev_doc:
-            db_owner = frappe.db.get_value("Task", doc.name, "task_owner")
-            if db_owner != doc.task_owner:
-                should_send = True
-                notification_event = "reassigned"
-
-    if not should_send:
-        return
-
-    # --- START NOTIFICATION LOGIC ---
-    recipient_email = doc.task_owner
-    
-    # Content Logic based on the event
-    if notification_event == "created":
-        title_prefix = _("New Task")
-    elif notification_event == "reassigned":
-        title_prefix = _("Task Reassigned")
-    elif notification_event == "completed":
-        title_prefix = _("Task Completed")
-    else:
-        title_prefix = _("Task Update")
-
-    title = f"{title_prefix}: {doc.subject}"
-    
-    body = _("Priority: {0}\nStatus: {1}").format(
-        doc.priority,
-        doc.status
-    )
-
-    # Fetch token
-    employee_data = frappe.db.get_value("Employee", 
-        {"user_id": recipient_email, "status": "Active"}, 
-        ["custom_fcm_token"], as_dict=True)
-
-    if not employee_data or not employee_data.custom_fcm_token:
-        return
-
-    try:
-        send_fcm_notification(
-            token=employee_data.custom_fcm_token,
-            title=title,
-            body=body,
-            doctype="Task",
-            task_id=doc.name,
-            user=recipient_email,
-            notification_type="TaskUpdate" # Changed to generic TaskUpdate
-        )
-    except Exception:
-        frappe.log_error("FCM Task Update Error", frappe.get_traceback())
-
+        if wa_allowed:
+            try:
+                wa_message = (
+                    f"*{event_label}*\n\n"
+                    f"*Subject:* {doc.subject}\n"
+                    f"*Status:* {doc.status}\n"
+                    f"*Due Date:* {due_date}\n"
+                    f"*Details:* {description}"
+                )
+                send_custom_whatsapp_message(mobile_number=emp.cell_number, message=wa_message)
+            except Exception:
+                frappe.log_error(f"WhatsApp Error for Task {doc.name}", frappe.get_traceback())
 
 from frappe.utils import today, getdate
 
+# def send_daily_task_summary():
+#     """
+#     Cron Job: Runs daily at 9 AM.
+#     Gathers active tasks for every owner and sends a summary FCM.
+#     """
+#     current_date = getdate(today())
+    
+#     # 1. Fetch all active tasks with owners
+#     active_tasks = frappe.get_all("Task", 
+#         filters={
+#             "status": ["in", ["Open", "Working", "Pending Review", "Overdue"]],
+#             "task_owner": ["is", "set"]
+#         }, 
+#         fields=["name", "subject", "task_owner", "status", "exp_end_date"]
+#     )
+
+#     if not active_tasks:
+#         return
+
+#     # 2. Group tasks by owner
+#     user_summaries = {}
+#     for task in active_tasks:
+#         owner = task.task_owner
+#         if owner not in user_summaries:
+#             user_summaries[owner] = {"total": 0, "overdue": 0, "due_today": 0}
+        
+#         user_summaries[owner]["total"] += 1
+        
+#         # Check deadline status
+#         if task.exp_end_date:
+#             due_date = getdate(task.exp_end_date)
+#             if due_date < current_date:
+#                 user_summaries[owner]["overdue"] += 1
+#             elif due_date == current_date:
+#                 user_summaries[owner]["due_today"] += 1
+
+#     # 3. Iterate through summaries and send notifications
+#     for email, counts in user_summaries.items():
+#         # Only send if they have any active tasks
+#         if counts["total"] == 0:
+#             continue
+
+#         # Get Token
+#         token = frappe.db.get_value("Employee", {"user_id": email, "status": "Active"}, "custom_fcm_token")
+        
+#         if not token:
+#             continue
+
+#         # 4. Prepare Message
+#         title = _("📋 Daily Task Summary")
+        
+#         body = _("Good morning! Here is your task update:\n")
+#         body += _("• Total Active: {0}\n").format(counts["total"])
+        
+#         if counts["due_today"] > 0:
+#             body += _("• Ending Today: {0} 🕒\n").format(counts["due_today"])
+            
+#         if counts["overdue"] > 0:
+#             body += _("• Overdue: {0} ⚠️").format(counts["overdue"])
+#         else:
+#             body += _("Keep up the great work!")
+
+#         # 5. Send Notification
+#         try:
+#             send_fcm_notification(
+#                 token=token,
+#                 title=title,
+#                 body=body,
+#                 user=email,
+#                 notification_type="DailySummary"
+#             )
+#         except Exception:
+#             frappe.log_error(f"Daily Cron FCM Failed for {email}", frappe.get_traceback())
+
+
+
+
+
+import frappe
+from frappe.utils import getdate, today
+from frappe import _
+from webtoolex_whatsapp.webtoolex_whatsapp.doctype.whatsapp_instance.whatsapp_instance import send_custom_whatsapp_message
+
 def send_daily_task_summary():
-    """
-    Cron Job: Runs daily at 9 AM.
-    Gathers active tasks for every owner and sends a summary FCM.
-    """
+    """Daily summary at 9 AM with Admin Settings Control."""
+    
+    # Fetch Settings from 'Admin Settings' Single Doctype
+    settings = frappe.get_cached_doc("Admin Settings")
     current_date = getdate(today())
     
-    # 1. Fetch all active tasks with owners
+    # 1. Fetch active tasks
     active_tasks = frappe.get_all("Task", 
         filters={
             "status": ["in", ["Open", "Working", "Pending Review", "Overdue"]],
@@ -429,7 +666,7 @@ def send_daily_task_summary():
     if not active_tasks:
         return
 
-    # 2. Group tasks by owner
+    # 2. Group by owner
     user_summaries = {}
     for task in active_tasks:
         owner = task.task_owner
@@ -437,8 +674,6 @@ def send_daily_task_summary():
             user_summaries[owner] = {"total": 0, "overdue": 0, "due_today": 0}
         
         user_summaries[owner]["total"] += 1
-        
-        # Check deadline status
         if task.exp_end_date:
             due_date = getdate(task.exp_end_date)
             if due_date < current_date:
@@ -446,43 +681,36 @@ def send_daily_task_summary():
             elif due_date == current_date:
                 user_summaries[owner]["due_today"] += 1
 
-    # 3. Iterate through summaries and send notifications
+    # 3. Notification Loop
     for email, counts in user_summaries.items():
-        # Only send if they have any active tasks
-        if counts["total"] == 0:
-            continue
-
-        # Get Token
-        token = frappe.db.get_value("Employee", {"user_id": email, "status": "Active"}, "custom_fcm_token")
+        emp = frappe.db.get_value("Employee", {"user_id": email, "status": "Active"}, 
+            ["custom_fcm_token", "cell_number", "employee_name"], as_dict=True)
         
-        if not token:
-            continue
+        if not emp: continue
 
-        # 4. Prepare Message
-        title = _("📋 Daily Task Summary")
-        
-        body = _("Good morning! Here is your task update:\n")
-        body += _("• Total Active: {0}\n").format(counts["total"])
-        
-        if counts["due_today"] > 0:
-            body += _("• Ending Today: {0} 🕒\n").format(counts["due_today"])
-            
-        if counts["overdue"] > 0:
-            body += _("• Overdue: {0} ⚠️").format(counts["overdue"])
-        else:
-            body += _("Keep up the great work!")
+        # FCM - Standard sending
+        if emp.custom_fcm_token:
+            try:
+                send_fcm_notification(
+                    token=emp.custom_fcm_token,
+                    title=_("📋 Daily Task Summary"),
+                    body=_("Active: {0} | Due Today: {1}").format(counts["total"], counts["due_today"]),
+                    user=email
+                )
+            except: pass
 
-        # 5. Send Notification
-        try:
-            send_fcm_notification(
-                token=token,
-                title=title,
-                body=body,
-                user=email,
-                notification_type="DailySummary"
-            )
-        except Exception:
-            frappe.log_error(f"Daily Cron FCM Failed for {email}", frappe.get_traceback())
+        # WhatsApp - Controlled by Admin Settings
+        if settings.enable_whatsapp and settings.send_daily_summary_wa and emp.cell_number:
+            try:
+                wa_msg = (
+                    f"🌞 *Daily Task Summary*\n\n"
+                    f"📝 *Total Tasks:* {counts['total']}\n"
+                    f"🕒 *Due Today:* {counts['due_today']}\n"
+                    f"⚠️ *Overdue:* {counts['overdue']}"
+                )
+                send_custom_whatsapp_message(mobile_number=emp.cell_number, message=wa_msg)
+            except Exception:
+                frappe.log_error(f"Daily Cron WA Error for {email}", frappe.get_traceback())
 
 
 def send_activity_creation_notification(doc, method=None):
