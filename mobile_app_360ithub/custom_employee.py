@@ -1292,6 +1292,22 @@ def get_employees_with_absent(from_date=None, to_date=None, employee=None, sort_
     employee_name = emp_details.employee_name if emp_details else ""
     shift = emp_details.default_shift if emp_details else ""
 
+    if emp_details:
+        doj = emp_details.get("date_of_joining")
+        relieving_date = emp_details.get("relieving_date")
+
+        # Push the start_date forward if they joined after the requested from_date
+        if doj and getdate(doj) > start_date:
+            start_date = getdate(doj)
+            
+        # Pull the end_date backward if they left before the requested to_date
+        if relieving_date and getdate(relieving_date) < end_date:
+            end_date = getdate(relieving_date)
+
+    # If the adjusted start is after the end (e.g., they haven't joined yet in this date range)
+    if start_date > end_date:
+        return {"data": [], "count": 0, "from_date": from_date, "to_date": to_date}
+
     calc_rule = "Every Valid Check-in and Check-out" # Default fallback
     if shift:
         fetched_rule = frappe.db.get_value("Shift Type", shift, "working_hours_calculation_based_on")
