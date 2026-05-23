@@ -1,6 +1,7 @@
 import frappe
 import json
-from frappe.utils import now_datetime, today
+from frappe.utils import now_datetime, today, getdate
+
 
 
 
@@ -78,6 +79,15 @@ def biometric_login(**kwargs):
         # ---------------------------------------
         # Use provided time or current server time
         log_dt = raw_data.get("log_datetime") or now_datetime()
+
+        if frappe.db.exists("Employee Checkin", {
+            "employee": employee,
+            "time": log_dt,
+            "system_generated": 0
+        }):
+            msg = f"Duplicate skipped for {employee} at {log_dt}"
+            update_log(log, "Completed", output={"message": msg, "duplicate": True})
+            return {"status": True, "message": msg} # Return True so hardware stops retrying
         
         # Smart toggle logic (Safe against yesterday's missed punches)
         new_log_type = calculate_log_type(employee)
@@ -167,13 +177,29 @@ def update_log(doc, status, output=None, error=None):
     doc.save(ignore_permissions=True)
     frappe.db.commit()
 
-def calculate_log_type(employee):
+# def calculate_log_type(employee):
+#     """Smart calculation for IN/OUT based on TODAY's activity."""
+#     last_log = frappe.db.get_value(
+#         "Employee Checkin",
+#         {
+#             "employee": employee,
+#             "time": [">=", f"{today()} 00:00:00"] # Reset logic every midnight
+#         },
+#         "log_type",
+#         order_by="time DESC"
+#     )
+#     if not last_log:
+#         return "IN" # First punch of the day is IN
+#     return "OUT" if last_log == "IN" else "IN"
+
+def calculate_log_type(employee, log_dt):
     """Smart calculation for IN/OUT based on TODAY's activity."""
+    log_date = getdate(log_dt)
     last_log = frappe.db.get_value(
         "Employee Checkin",
         {
             "employee": employee,
-            "time": [">=", f"{today()} 00:00:00"] # Reset logic every midnight
+            "time": ["between", [f"{log_date} 00:00:00", log_dt]],  # Reset logic every midnight
         },
         "log_type",
         order_by="time DESC"
@@ -181,6 +207,7 @@ def calculate_log_type(employee):
     if not last_log:
         return "IN" # First punch of the day is IN
     return "OUT" if last_log == "IN" else "IN"
+
 
 
 
