@@ -90,7 +90,7 @@ def biometric_login(**kwargs):
             return {"status": True, "message": msg} # Return True so hardware stops retrying
         
         # Smart toggle logic (Safe against yesterday's missed punches)
-        new_log_type = calculate_log_type(employee)
+        new_log_type = calculate_log_type(employee, log_dt)
 
         # ---------------------------------------
         # ACTION: Create Check-in
