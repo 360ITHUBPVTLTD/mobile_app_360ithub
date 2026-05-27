@@ -351,6 +351,9 @@ def get_hr_absent_dashboard_data(from_date=None, to_date=None, employee=None, so
     
     employee_list = []
     if employee and employee not in ["", "undefined", "null"]:
+        is_active = frappe.db.get_value("Employee", employee, "status") == "Active"
+        if not is_active:
+            return {"data": [], "count": 0, "from_date": from_date, "to_date": to_date}
         # Case 1: HR has filtered for a specific employee
         employee_list.append(employee)
     else:
@@ -365,7 +368,7 @@ def get_hr_absent_dashboard_data(from_date=None, to_date=None, employee=None, so
                 employee_list.append(my_employee_id)
 
     if not employee_list:
-        return {"data": [], "count": 0}
+        return {"data": [], "count": 0, "from_date": from_date, "to_date": to_date}
 
     result_list = []
     
