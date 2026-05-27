@@ -1288,7 +1288,7 @@ def get_employees_with_absent(from_date=None, to_date=None, employee=None, sort_
     holiday_dates_str = [str(d) for d in holiday_dates]
 
     # Fetch Employee Details once
-    emp_details = frappe.db.get_value("Employee", employee, ["employee_name", "default_shift"], as_dict=True)
+    emp_details = frappe.db.get_value("Employee", employee, ["employee_name", "default_shift", "date_of_joining", "relieving_date"], as_dict=True)
     employee_name = emp_details.employee_name if emp_details else ""
     shift = emp_details.default_shift if emp_details else ""
 
