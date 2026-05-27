@@ -133,6 +133,11 @@ app_license = "mit"
 # 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
 
+override_doctype_class = {
+	"Attendance Request": "mobile_app_360ithub.custom_attendance_request.CustomAttendanceRequest",
+    "Leave Application": "mobile_app_360ithub.custom_leave_application.CustomLeaveApplication"
+}
+
 # Document Events
 # ---------------
 # Hook on document methods and events
