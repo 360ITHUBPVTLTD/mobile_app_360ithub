@@ -850,18 +850,36 @@ def auto_submit_on_approval(doc, method=None):
         
         current_user = frappe.session.user
         
-        # 2. Security: Check if current user is the specific person chosen as Approver
-        # Or if the user is a System Manager/HR Manager
-        is_approver = (current_user == doc.custom_attendance_request_approver)
-        is_hr = "HR Manager" in frappe.get_roles(current_user)
+        master_roles = set()
+        master_roles.add("System Manager")
+        try:
+            clarity_settings = frappe.get_cached_doc("Mobile App Admin Settings")
+            master_roles = set([row.role for row in clarity_settings.get("hr_admin_role", [])])
+        except frappe.DoesNotExistError:
+            # Fallback if settings document has not been initialized yet
+            pass
         
-        if is_approver or is_hr:
+        user_roles = set(frappe.get_roles(current_user))
+        
+        # 2. Authorization Evaluation
+        is_admin = bool(user_roles.intersection(master_roles))
+        is_approver = (current_user == doc.custom_attendance_request_approver)
+        
+        # If the user is neither an authorized admin nor the designated approver, block the action
+        if not (is_admin or is_approver):
+            approver_name = frappe.db.get_value("User", doc.custom_attendance_request_approver, "full_name") or doc.custom_attendance_request_approver
+            frappe.throw(
+                _("Only the designated approver ({0}) or an authorized HR Admin is permitted to approve this request.")
+                .format(approver_name)
+            )
+        
             # 3. FORCE SUBMIT: This bypasses the need for the "Submit" checkbox in Role Permissions
-            doc.flags.ignore_permissions = True
-            doc.submit()
-            
-            # Add a comment for the audit trail
-            frappe.msgprint(frappe._("Attendance Request for {0} has been officially Approved and Submitted.").format(doc.employee_name))
+        doc.flags.ignore_permissions = True
+        doc.submit()
+        
+        # Add a comment for the audit trail
+        frappe.msgprint(frappe._("Attendance Request for {0} has been officially Approved and Submitted.").format(doc.employee_name))
+
 
 def validate_approver_authority(doc, method=None):
     """
@@ -875,6 +893,12 @@ def validate_approver_authority(doc, method=None):
         
         # 2. Bypass check for Administrator (System override)
         if current_user == "Administrator":
+            return
+        
+        user_roles = set(frappe.get_roles())
+        clarity_settings = frappe.get_cached_doc("Mobile App Admin Settings")
+        master_roles = set([row.role for row in clarity_settings.get("hr_admin_role", [])])
+        if user_roles.intersection(master_roles):
             return
 
         # 3. Check if the logged-in user is NOT the designated approver

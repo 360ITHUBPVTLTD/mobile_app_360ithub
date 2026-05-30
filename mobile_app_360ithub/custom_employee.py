@@ -486,10 +486,11 @@ def validate_leave_approver_on_submit(doc, method=None):
     or users with the 'SCHITS Administrator' or 'HR Manager' role.
     """
     # 1. Allow if user has the SCHITS Administrator or HR Manager role
-    user_roles = frappe.get_roles()
-    if "HR Manager" in user_roles:
+    user_roles = set(frappe.get_roles())
+    clarity_settings = frappe.get_cached_doc("Mobile App Admin Settings")
+    master_roles = set([row.role for row in clarity_settings.get("hr_admin_role", [])])
+    if user_roles.intersection(master_roles):
         return
-
     # 2. If current user is NOT the designated leave approver, throw error
     if doc.leave_approver != frappe.session.user:
         # Fetch full name of the designated approver for a clearer message
