@@ -8,7 +8,8 @@
   "auto_mark_attendance_based_on_shift_section",
   "auto_mark_attendance",
   "shift_type",
-  "professional_tax_applicable"
+  "professional_tax_applicable",
+  "hr_admin_role"
  ],
  "fields": [
   {
@@ -33,13 +34,19 @@
    "fieldname": "professional_tax_applicable",
    "fieldtype": "Check",
    "label": "Professional Tax applicable"
+  },
+  {
+   "fieldname": "hr_admin_role",
+   "fieldtype": "Table MultiSelect",
+   "label": "HR Admin Role",
+   "options": "Has Role"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-05 12:51:51.502838",
+ "modified": "2026-05-30 14:22:49.275739",
  "modified_by": "Administrator",
  "module": "Mobile App 360Ithub",
  "name": "Mobile App Admin Settings",
