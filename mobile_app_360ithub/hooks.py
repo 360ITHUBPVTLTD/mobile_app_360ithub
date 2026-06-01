@@ -44,6 +44,17 @@ app_license = "mit"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    # "Salary Structure Assignment" : "public/js/custom_salary_structure_assignment.js",
+    "Attendance Request": [
+        "public/js/ARQthreshold_calculator.js",
+        "public/js/ARQemployee_existing_logs.js"
+    ],
+    # "Attendance" : "public/js/AttendanceCheckinTable.js",
+    # "Leave Application" : "public/js/custom_leave_application.js",
+    
+
+    }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -181,6 +192,7 @@ doc_events = {
         # "on_submit": "mobile_app_360ithub.custom_hr.fix_checkin_skip_logic",
         # "before_validate": "mobile_app_360ithub.custom_hr.clear_attendance_request_conflict",
         "validate": "mobile_app_360ithub.custom_attendance_request.validate",
+        # "before_save": "mobile_app_360ithub.custom_attendance_request.validate", 
         "before_submit": "mobile_app_360ithub.custom_attendance_request.before_submit",
         "on_submit": "mobile_app_360ithub.custom_attendance_request.on_submit",
         "on_cancel": "mobile_app_360ithub.custom_attendance_request.on_cancel",
@@ -352,6 +364,17 @@ fixtures = [
 # 		"doctype": "{doctype_4}"
 # 	}
 # ]
+
+fixtures = [
+    {
+        "dt": "Property Setter", 
+        "filters": [["module", "=", "Mobile App 360Ithub"]]
+    },
+    # {
+    #     "dt": "Client Script",
+    #     "filters": [["name","in", custom_client_script_blocks_dashboard]]
+    # }
+]
 
 # Authentication and authorization
 # --------------------------------
