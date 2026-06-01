@@ -475,7 +475,10 @@ def get_my_pending_leaves():
             
     return leave_applications
 
-
+def employee_validate(doc, method=None):
+    frappe.log_error("Employee Validate Triggered", "Employee Validation")
+    if doc.checkin_method == "Biometric" and not doc.attendance_device_id:
+        frappe.throw(("Attendance Device ID is required for Employee with Biometric check-in method. Please update and try again."))
 
 import frappe
 from frappe import _

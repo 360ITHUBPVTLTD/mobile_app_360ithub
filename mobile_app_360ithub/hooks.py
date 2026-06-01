@@ -51,7 +51,7 @@ doctype_js = {
         "public/js/ARQemployee_existing_logs.js"
     ],
     # "Attendance" : "public/js/AttendanceCheckinTable.js",
-    # "Leave Application" : "public/js/custom_leave_application.js",
+    "Employee" : "public/js/custom_employee.js",
     
 
     }
@@ -156,12 +156,14 @@ override_doctype_class = {
 doc_events = {
     "Employee Checkin": {
         "before_insert": "mobile_app_360ithub.custom_employee_checkin.checkin_before_insert",
+        
     },
     "Attendance": {
         "before_submit": "mobile_app_360ithub.custom_attendance.auto_present_logic"
     },
     "Employee": {
         "before_save": "mobile_app_360ithub.custom_employee.before_save_employee",
+        "validate": "mobile_app_360ithub.custom_employee.employee_validate",
     },
    
  	"Comment": {
