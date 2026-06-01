@@ -301,9 +301,9 @@ def on_cancel(doc, method):
     att = frappe.get_all("Attendance", filters={ "attendance_request": doc.name},fields = ["name","leave_application"])
     if att and att[0].leave_application:
         leave_linked = frappe.get_all("Leave Application", filters={"docstatus": 1, "name": att[0].leave_application})
-
-        leave_doc = frappe.get_doc("Leave Application", leave_linked[0].name)
-        leave_doc.cancel()
+        if leave_linked:
+            leave_doc = frappe.get_doc("Leave Application", leave_linked[0].name)
+            leave_doc.cancel()
         
 
 
