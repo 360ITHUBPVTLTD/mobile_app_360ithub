@@ -45,12 +45,13 @@ app_license = "mit"
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 doctype_js = {
-    # "Salary Structure Assignment" : "public/js/custom_salary_structure_assignment.js",
+    "Salary Structure Assignment" : "public/js/custom_salary_structure_assignment.js",
     "Attendance Request": [
         "public/js/ARQthreshold_calculator.js",
         "public/js/ARQemployee_existing_logs.js"
     ],
-    # "Attendance" : "public/js/AttendanceCheckinTable.js",
+    "Attendance" : "public/js/AttendanceCheckinTable.js",
+    "Leave Application" : "public/js/custom_leave_application.js",
     "Employee" : "public/js/custom_employee.js",
     
 
