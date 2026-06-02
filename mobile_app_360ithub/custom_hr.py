@@ -1089,3 +1089,56 @@ def send_salary_slip_with_pdf(doc, method=None):
     except Exception:
         # Log the error in the 'Error Log' list if it fails
         frappe.log_error(title="Salary Slip Email System Failure", message=frappe.get_traceback())
+
+
+
+@frappe.whitelist()
+def get_upcoming_holidays_filtered():
+    """
+    Returns holidays for the next 10 days:
+    - Excludes all Sundays.
+    - Includes only 1st and 3rd Saturdays.
+    - Includes all other non-weekend holidays (Festivals).
+    """
+    today_date = today()
+
+    holiday_lists = frappe.db.get_value("Holiday List", {"from_date": ["<=", today_date], "to_date": [">=", today_date]}, "name")
+    holiday_list_name = holiday_lists
+    # print("HHHHHHHHHHHHHHHHHHHHHHHoliday List Name:", holiday_list_name)  # Debugging line
+    start_date = today()
+    end_date = add_days(start_date, 10)
+    # print("Start Date:", start_date, "End Date:", end_date)  # Debugging line
+    
+    raw_holidays = frappe.get_all(
+        "Holiday",
+        filters={
+            "parent": holiday_list_name,
+            "holiday_date": ["between", [start_date, end_date]]
+        },
+        fields=["holiday_date", "description"],
+        order_by="holiday_date asc"
+    )
+
+    filtered_list = []
+
+    for h in raw_holidays:
+        dt = getdate(h.holiday_date)
+        day_of_month = dt.day
+        weekday = dt.weekday() # 0=Monday, 5=Saturday, 6=Sunday
+
+        # 1. Strictly Exclude Sunday
+        if weekday == 6:
+            continue
+
+        # 2. Logic for Saturdays
+        if weekday == 5:
+            # Calculate which Saturday of the month it is (1st, 2nd, 3rd, etc.)
+            week_num = (day_of_month - 1) // 7 + 1
+            if week_num in [1, 3]:
+                filtered_list.append(h)
+            continue # Skip 2nd, 4th, or 5th Saturdays
+
+        # 3. Include all other holidays (Labour Day, Festivals, etc.)
+        filtered_list.append(h)
+
+    return filtered_list
