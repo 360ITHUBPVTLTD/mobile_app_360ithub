@@ -338,6 +338,10 @@ fixtures = [
                 ]
             ]
         ]
+    },
+    {
+        "dt": "Property Setter", 
+        "filters": [["module", "=", "Mobile App 360Ithub"]]
     }
 ]
 
@@ -368,16 +372,16 @@ fixtures = [
 # 	}
 # ]
 
-fixtures = [
-    {
-        "dt": "Property Setter", 
-        "filters": [["module", "=", "Mobile App 360Ithub"]]
-    },
+#fixtures = [
+#    {
+ #       "dt": "Property Setter", 
+ #       "filters": [["module", "=", "Mobile App 360Ithub"]]
+ #   },
     # {
     #     "dt": "Client Script",
     #     "filters": [["name","in", custom_client_script_blocks_dashboard]]
     # }
-]
+#]
 
 # Authentication and authorization
 # --------------------------------
