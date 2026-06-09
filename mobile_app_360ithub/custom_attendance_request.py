@@ -341,3 +341,15 @@ def fix_checkin_skip_logic(doc):
     for log in requested_logs:
         frappe.db.set_value("Employee Checkin", log.name, "skip_auto_attendance", 0)
 
+
+@frappe.whitelist()
+def get_hr_admin_roles():
+    """
+    Returns the list of authorized HR admin roles from Clarity Admin Settings.
+    Bypasses UI role permission restrictions.
+    """
+    try:
+        clarity_settings = frappe.get_cached_doc("Mobile App Admin Settings")
+        return [row.role for row in clarity_settings.get("hr_admin_role", [])]
+    except frappe.DoesNotExistError:
+        return []
