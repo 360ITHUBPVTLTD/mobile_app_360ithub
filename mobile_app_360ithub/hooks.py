@@ -147,7 +147,8 @@ doctype_js = {
 
 override_doctype_class = {
 	"Attendance Request": "mobile_app_360ithub.custom_attendance_request.CustomAttendanceRequest",
-    "Leave Application": "mobile_app_360ithub.custom_leave_application.CustomLeaveApplication"
+    "Leave Application": "mobile_app_360ithub.custom_leave_application.CustomLeaveApplication",
+    "Shift Type": "mobile_app_360ithub.custom_shift_type.CustomShiftType"
 }
 
 # Document Events
