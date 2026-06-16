@@ -236,7 +236,7 @@ def employee_data(filters):
         else:
             emp_leave_bal[i.employee][i.leave_type] = (i.leaves_allocated, i.leaves_taken)
 
-    professional_tax_applicable = frappe.get_single_value("Mobile App Setting", "professional_tax_applicable")
+    professional_tax_applicable = frappe.get_single_value("Mobile App Admin Settings", "professional_tax_applicable")
 
     for emp in emp_list:
         data_row = {
