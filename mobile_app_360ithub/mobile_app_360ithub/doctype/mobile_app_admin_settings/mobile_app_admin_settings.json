@@ -9,7 +9,9 @@
   "auto_mark_attendance",
   "shift_type",
   "professional_tax_applicable",
-  "hr_admin_role"
+  "hr_admin_role",
+  "admin_tab",
+  "360_hrms_implementation"
  ],
  "fields": [
   {
@@ -40,13 +42,23 @@
    "fieldtype": "Table MultiSelect",
    "label": "HR Admin Role",
    "options": "Has Role"
+  },
+  {
+   "fieldname": "admin_tab",
+   "fieldtype": "Tab Break",
+   "label": "Admin"
+  },
+  {
+   "fieldname": "360_hrms_implementation",
+   "fieldtype": "Date",
+   "label": "360 HRMS Implementation"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-30 14:22:49.275739",
+ "modified": "2026-06-16 18:27:43.103841",
  "modified_by": "Administrator",
  "module": "Mobile App 360Ithub",
  "name": "Mobile App Admin Settings",

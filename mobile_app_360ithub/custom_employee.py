@@ -1308,18 +1308,37 @@ def get_employees_with_absent(from_date=None, to_date=None, employee=None, sort_
         if relieving_date and getdate(relieving_date) < end_date:
             end_date = getdate(relieving_date)
 
+        hrms_implementation_date = getdate("2020-01-01") # Changed to YYYY-MM-DD
+        try:
+            # get_single_value is highly efficient as it queries the tabSingles table directly
+            implementation_date = frappe.db.get_single_value("Mobile App Admin Settings", "360_hrms_implementation")
+            if implementation_date:
+                hrms_implementation_date = getdate(implementation_date)
+        except Exception as e:
+            frappe.log_error(message=f"Unable to get HRMS Implementation Date: \n{e}", title="Clarity Admin Settings")
+
+        # Push the start_date forward if the system wasn't live yet
+        if hrms_implementation_date and start_date < hrms_implementation_date:
+            start_date = hrms_implementation_date
+
     # If the adjusted start is after the end (e.g., they haven't joined yet in this date range)
     if start_date > end_date:
         return {"data": [], "count": 0, "from_date": from_date, "to_date": to_date}
 
     calc_rule = "Every Valid Check-in and Check-out" # Default fallback
+    HALF_DAY_THRESHOLD = 4.0 
     if shift:
         fetched_rule = frappe.db.get_value("Shift Type", shift, "working_hours_calculation_based_on")
         if fetched_rule:
             calc_rule = fetched_rule
 
+        fetch_half_day_threshold = frappe.db.get_value("Shift Type", shift, "working_hours_threshold_for_absent")
+
+        if fetch_half_day_threshold:
+            HALF_DAY_THRESHOLD = fetch_half_day_threshold
+
     result_list = []
-    HALF_DAY_THRESHOLD = 4.0 
+    
 
     # 2. THE FIX: Iterate over CALENDAR DAYS, not database records
     total_days = date_diff(end_date, start_date) + 1
