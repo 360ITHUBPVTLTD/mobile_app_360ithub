@@ -6,6 +6,14 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
 class CustomLeaveApplication(LeaveApplication):
 
+    def validate_attendance(self):
+        # Do not block cancellation or rejection if attendance already exists
+        if self.status in ["Open", "Rejected", "Cancelled"]:
+            return
+            
+        # For all other statuses, run the standard HRMS attendance validation
+        super().validate_attendance()
+
     def create_or_update_attendance(self, attendance_name, date):
         is_half_day_leave = self.half_day_date and frappe.utils.getdate(date) == frappe.utils.getdate(self.half_day_date)
         status = "Half Day" if is_half_day_leave else "On Leave"
