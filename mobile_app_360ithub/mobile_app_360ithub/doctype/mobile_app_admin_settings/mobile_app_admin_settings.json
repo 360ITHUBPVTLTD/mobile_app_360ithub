@@ -11,7 +11,9 @@
   "professional_tax_applicable",
   "hr_admin_role",
   "admin_tab",
-  "360_hrms_implementation"
+  "360_hrms_implementation",
+  "bulk_attendance_tab",
+  "bulk_attendance_roles"
  ],
  "fields": [
   {
@@ -52,6 +54,18 @@
    "fieldname": "360_hrms_implementation",
    "fieldtype": "Date",
    "label": "360 HRMS Implementation"
+  },
+  {
+   "fieldname": "bulk_attendance_tab",
+   "fieldtype": "Tab Break",
+   "label": "Bulk Attendance"
+  },
+  {
+   "description": "Only users holding one of these roles will see the \"Bulk Attendance\" button on the HR Workspace Absences table and be allowed to mark bulk attendance. Leave empty to use the default roles (System Manager, HR Manager, Leave Approver).",
+   "fieldname": "bulk_attendance_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Bulk Attendance Roles",
+   "options": "Has Role"
   }
  ],
  "grid_page_length": 50,
