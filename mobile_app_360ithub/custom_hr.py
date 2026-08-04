@@ -1,6 +1,7 @@
 import frappe
+from frappe import _
 from datetime import datetime, timedelta, date
-from frappe.utils import get_first_day, get_last_day, add_months, getdate, add_days, now_datetime
+from frappe.utils import get_first_day, get_last_day, add_months, getdate, add_days, now_datetime, get_datetime, today
 
 
 @frappe.whitelist()
@@ -391,6 +392,240 @@ def get_hr_absent_dashboard_data(from_date=None, to_date=None, employee=None, so
         result_list.sort(key=lambda x: x['date'])
 
     return {"data": result_list, "count": len(result_list), "from_date": from_date, "to_date": to_date}
+
+
+BULK_ATTENDANCE_PRIVILEGED_ROLES = ["System Manager", "HR Manager", "Leave Approver"]
+
+
+def get_bulk_attendance_roles():
+    """
+    Roles allowed to see/use Bulk Attendance, configured at Mobile App Admin Settings >
+    Bulk Attendance tab. Falls back to BULK_ATTENDANCE_PRIVILEGED_ROLES if left empty
+    or the settings document hasn't been initialized yet.
+    """
+    try:
+        settings = frappe.get_cached_doc("Mobile App Admin Settings")
+        roles = [row.role for row in settings.get("bulk_attendance_roles", [])]
+    except frappe.DoesNotExistError:
+        roles = []
+    return set(roles) if roles else set(BULK_ATTENDANCE_PRIVILEGED_ROLES)
+
+
+@frappe.whitelist()
+def can_access_bulk_attendance():
+    """Whitelisted check the HR Workspace uses to decide whether to show the Bulk Attendance button."""
+    return {"allowed": bool(set(frappe.get_roles()).intersection(get_bulk_attendance_roles()))}
+
+
+@frappe.whitelist()
+def get_employees_for_bulk_attendance(date, branch=None):
+    """
+    Returns active employees (optionally filtered by branch) classified for the given date
+    as Present / On Leave / Draft Request / Request Submitted / Eligible, for the
+    "Bulk Attendance" dialog on the HR Workspace Absences table.
+
+    Only "Eligible" rows (no attendance, or attendance marked Absent, with no leave/request
+    already in progress) get default check-in/check-out times resolved from the employee's
+    shift, since those are the only rows the dialog allows regularizing.
+    """
+    if not date:
+        frappe.throw(_("Date is required"))
+    if getdate(date) > getdate(today()):
+        frappe.throw(_("Attendance can only be regularized up to today."))
+
+    emp_filters = {"status": "Active"}
+    if branch:
+        emp_filters["branch"] = branch
+
+    employees = frappe.get_all(
+        "Employee",
+        filters=emp_filters,
+        fields=["name", "employee_name", "designation", "image", "branch", "default_shift"],
+        order_by="employee_name asc",
+    )
+    if not employees:
+        return {"data": [], "date": date}
+
+    emp_names = [e.name for e in employees]
+
+    attendance_map = {
+        a.employee: a
+        for a in frappe.get_all(
+            "Attendance",
+            filters={"employee": ["in", emp_names], "attendance_date": date, "docstatus": ["<", 2]},
+            fields=["employee", "name", "status", "docstatus"],
+        )
+    }
+
+    leave_map = {}
+    for l in frappe.get_all(
+        "Leave Application",
+        filters={
+            "employee": ["in", emp_names],
+            "docstatus": ["<", 2],
+            "from_date": ["<=", date],
+            "to_date": [">=", date],
+            "status": ["not in", ["Rejected", "Cancelled"]],
+        },
+        fields=["employee", "name", "status", "half_day"],
+    ):
+        # An employee can only have one active leave covering a given day
+        leave_map.setdefault(l.employee, l)
+
+    arq_map = {
+        a.employee: a
+        for a in frappe.get_all(
+            "Attendance Request",
+            filters={"employee": ["in", emp_names], "from_date": date, "docstatus": ["<", 2]},
+            fields=["employee", "name", "docstatus", "custom_status"],
+        )
+    }
+
+    from hrms.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
+
+    lookup_dt = get_datetime(f"{date} 12:00:00")
+
+    result = []
+    for emp in employees:
+        att = attendance_map.get(emp.name)
+        leave = leave_map.get(emp.name)
+        arq = arq_map.get(emp.name)
+
+        row = {
+            "employee": emp.name,
+            "employee_name": emp.employee_name,
+            "designation": emp.designation,
+            "image": emp.image,
+            "branch": emp.branch,
+            "eligible": False,
+            "default_check_in": None,
+            "default_check_out": None,
+        }
+
+        if att and att.docstatus == 1 and att.status != "Absent":
+            row["status"] = "Present"
+        elif leave:
+            row["status"] = "On Leave"
+            row["leave_status"] = leave.status
+            row["leave_name"] = leave.name
+        elif arq and arq.docstatus == 0:
+            row["status"] = "Draft Request"
+            row["arq_name"] = arq.name
+        elif arq and arq.docstatus == 1:
+            row["status"] = "Request Submitted"
+            row["arq_name"] = arq.name
+        else:
+            row["status"] = "Eligible"
+            row["eligible"] = True
+
+        # Shift + actual punches are computed for every row (not just Eligible ones) so the
+        # dialog can show them as read-only reference context regardless of status - e.g. what
+        # time a "Present" employee actually punched in/out that day.
+        try:
+            shift_details = get_employee_shift(emp.name, lookup_dt, consider_default_shift=True)
+        except Exception:
+            shift_details = None
+
+        shift_start = shift_details["start_datetime"].strftime("%H:%M:%S") if shift_details and shift_details.get("start_datetime") else None
+        shift_end = shift_details["end_datetime"].strftime("%H:%M:%S") if shift_details and shift_details.get("end_datetime") else None
+        row["shift_start"] = shift_start
+        row["shift_end"] = shift_end
+
+        # Whatever actually got punched/recorded for the day, for reference - deliberately not
+        # filtered on skip_auto_attendance (HRMS flips that to 1 once the nightly auto-attendance
+        # job consumes a "Present" employee's punches) or system_generated (a previously-approved
+        # Attendance Request generates its own IN/OUT logs, which are exactly what a "Present" or
+        # "Request Submitted" row should be showing here). Genuinely Eligible rows never have any
+        # of these yet, so this same query is also safe to use for the regularization defaults.
+        punches = frappe.get_all(
+            "Employee Checkin",
+            filters={
+                "employee": emp.name,
+                "time": ["between", [f"{date} 00:00:00", f"{date} 23:59:59"]],
+            },
+            fields=["time", "log_type"],
+            order_by="time asc",
+        )
+        row["punch_count"] = len(punches)
+        row["first_punch"] = punches[0].time.strftime("%H:%M:%S") if punches else None
+        row["last_punch"] = punches[-1].time.strftime("%H:%M:%S") if len(punches) > 1 else None
+
+        if row["eligible"]:
+            # Regularization defaults: prefer what the employee actually punched, and only
+            # fall back to the shift's expected timing when there's nothing to go on at all.
+            if len(punches) >= 2:
+                row["default_check_in"] = row["first_punch"]
+                row["default_check_out"] = row["last_punch"]
+            elif len(punches) == 1:
+                row["default_check_in"] = row["first_punch"]
+                row["default_check_out"] = row["first_punch"]
+            else:
+                row["default_check_in"] = shift_start
+                row["default_check_out"] = shift_end
+
+        result.append(row)
+
+    return {"data": result, "date": date}
+
+
+@frappe.whitelist()
+def bulk_mark_attendance(date, records, reason="On Duty"):
+    """
+    Creates and submits an Attendance Request per selected employee, reusing the existing
+    CustomAttendanceRequest validate/before_submit/on_submit pipeline (custom_attendance_request.py)
+    that turns check-in/check-out times into an Attendance record + Employee Checkin logs.
+
+    records: JSON list of {"employee": ..., "check_in": "HH:MM:SS", "check_out": "HH:MM:SS"}
+    """
+    if not date:
+        frappe.throw(_("Date is required"))
+    if getdate(date) > getdate(today()):
+        frappe.throw(_("Attendance can only be regularized up to today."))
+
+    if isinstance(records, str):
+        records = frappe.parse_json(records)
+
+    if not records:
+        frappe.throw(_("No employees selected"))
+
+    if not set(frappe.get_roles()).intersection(get_bulk_attendance_roles()):
+        frappe.throw(_("You are not authorized to mark bulk attendance."))
+
+    success, failed = [], []
+    for r in records:
+        employee = r.get("employee")
+        try:
+            if not employee or not r.get("check_in") or not r.get("check_out"):
+                frappe.throw(_("Employee and both check-in/check-out times are required"))
+
+            # Equal (or reversed) times would otherwise trip the night-shift rollover in
+            # CustomAttendanceRequest.on_submit (custom_attendance_request.py), which pushes
+            # checkout to the same time the *next* day - silently recording 24 working hours.
+            if r.get("check_out") <= r.get("check_in"):
+                frappe.throw(_("Check-Out time must be after Check-In time"))
+
+            doc = frappe.get_doc({
+                "doctype": "Attendance Request",
+                "employee": employee,
+                "from_date": date,
+                "to_date": date,
+                "reason": reason,
+                "custom_check_in_time": r.get("check_in"),
+                "custom_check_out_time": r.get("check_out"),
+                "custom_status": "Approved",
+                "custom_attendance_request_approver": frappe.session.user,
+            })
+            doc.insert(ignore_permissions=True)
+            doc.submit()
+            frappe.db.commit()
+            success.append({"employee": employee, "name": doc.name})
+        except Exception as e:
+            frappe.db.rollback()
+            frappe.log_error(title="Bulk Attendance Failure", message=frappe.get_traceback())
+            failed.append({"employee": employee, "error": str(e)})
+
+    return {"success": success, "failed": failed}
+
 
 # on 20 march at 6:18pm------------------------------------
 
