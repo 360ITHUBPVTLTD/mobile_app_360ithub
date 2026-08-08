@@ -158,7 +158,7 @@ override_doctype_class = {
 doc_events = {
     "Employee Checkin": {
         "before_insert": "mobile_app_360ithub.custom_employee_checkin.checkin_before_insert",
-        
+        "after_insert": "mobile_app_360ithub.custom_employee_checkin.checkin_after_insert",
     },
     "Attendance": {
         "before_submit": "mobile_app_360ithub.custom_attendance.auto_present_logic"
@@ -243,6 +243,9 @@ scheduler_events = {
             ],
         "30 23 * * *": [
             "mobile_app_360ithub.custom_attendance.run_daily_auto_attendance"
+        ],
+        "0 11 * * *": [
+            "mobile_app_360ithub.daily_attendance_report.send_daily_attendance_report"
         ]
     },
     "daily": [

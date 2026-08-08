@@ -12,6 +12,11 @@
   "hr_admin_role",
   "admin_tab",
   "360_hrms_implementation",
+  "whatsapp_notifications_section",
+  "custom_enable_late_checkin_whatsapp",
+  "daily_attendance_report_section",
+  "custom_enable_daily_attendance_report",
+  "custom_daily_attendance_report_emails",
   "bulk_attendance_tab",
   "bulk_attendance_roles"
  ],
@@ -54,6 +59,35 @@
    "fieldname": "360_hrms_implementation",
    "fieldtype": "Date",
    "label": "360 HRMS Implementation"
+  },
+  {
+   "fieldname": "whatsapp_notifications_section",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp Notifications"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, an automated WhatsApp message will be sent to employees who check in late (after the grace period) for the first time each day.",
+   "fieldname": "custom_enable_late_checkin_whatsapp",
+   "fieldtype": "Check",
+   "label": "Enable Late Check-in WhatsApp Notification"
+  },
+  {
+   "fieldname": "daily_attendance_report_section",
+   "fieldtype": "Section Break",
+   "label": "Daily Attendance Report Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_enable_daily_attendance_report",
+   "fieldtype": "Check",
+   "label": "Enable Daily Attendance Report"
+  },
+  {
+   "description": "Enter comma-separated email addresses of the recipients (e.g., Anuj sir and HR).",
+   "fieldname": "custom_daily_attendance_report_emails",
+   "fieldtype": "Small Text",
+   "label": "Daily Attendance Report Emails"
   },
   {
    "fieldname": "bulk_attendance_tab",

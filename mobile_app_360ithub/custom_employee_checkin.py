@@ -1,5 +1,6 @@
 import frappe
 import json
+import requests
 from frappe.utils import now_datetime, today, getdate
 
 
@@ -339,3 +340,215 @@ def calculate_log_type(employee, log_dt):
 #             frappe.get_traceback()
 #         )
 #         return {"status": "error", "message": "Failed to create check-in"}
+
+
+def checkin_after_insert(doc, method=None):
+    """
+    Triggers after a new Employee Checkin is inserted.
+    Passes employee, log_type and time directly to the background job
+    to avoid DoesNotExistError from uncommitted DB transactions.
+    """
+    try:
+        frappe.enqueue(
+            "mobile_app_360ithub.custom_employee_checkin.run_late_coming_whatsapp_notification",
+            employee=doc.employee,
+            log_type=doc.log_type,
+            checkin_time=str(doc.time),
+            queue="short",
+            timeout=300
+        )
+    except Exception as e:
+        frappe.log_error(title="Late Checkin WhatsApp Enqueue Error", message=frappe.get_traceback())
+
+
+def run_late_coming_whatsapp_notification(employee, log_type, checkin_time):
+    """
+    Runs in background worker with data passed directly (no DB fetch needed).
+    """
+    try:
+        from frappe.model.document import Document
+        # Build a minimal mock doc with required fields
+        doc = frappe._dict({
+            "employee": employee,
+            "log_type": log_type,
+            "time": checkin_time,
+        })
+        send_late_coming_whatsapp_notification(doc)
+    except Exception as e:
+        frappe.log_error(title="Late Checkin WhatsApp Error", message=frappe.get_traceback())
+
+
+def send_late_coming_whatsapp_notification(doc):
+    from datetime import timedelta, datetime, time
+    from frappe.utils import get_datetime, getdate, now_datetime
+
+    # 0. Check if WhatsApp late check-in notifications are enabled in Mobile App Admin Settings
+    settings = frappe.get_single("Mobile App Admin Settings")
+    if not settings.get("custom_enable_late_checkin_whatsapp"):
+        return  # Feature is disabled — do nothing
+
+    # 1. Validate that the check-in is an IN punch
+    if doc.log_type != "IN":
+        return
+
+    # 2. Check if check-in time date is equal to the current server date (same-day check)
+    checkin_time = get_datetime(doc.time)
+    current_time = now_datetime()
+    if getdate(checkin_time) != getdate(current_time):
+        return
+
+    # 3. Retrieve employee shift details
+    from hrms.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
+    shift_details = get_employee_shift(doc.employee, checkin_time, consider_default_shift=True)
+    if not shift_details:
+        return
+
+    shift_start = shift_details.get("start_datetime")
+    if not shift_start:
+        return
+
+    # 4. If the shift type is "No Punch Needed", do not send a notification
+    shift_type_name = shift_details.get("shift_type", {}).get("name")
+    if shift_type_name == "No Punch Needed":
+        return
+
+    # 5. Calculate late threshold (shift start + 15 min grace)
+    #    No upper bound — any first late check-in after grace period will trigger the notification
+    grace_period_mins = 15
+    late_threshold = shift_start + timedelta(minutes=grace_period_mins)
+
+    # 6. Trigger only if check-in is after the late threshold
+    if checkin_time > late_threshold:
+        today_str = checkin_time.date().strftime("%Y-%m-%d")
+
+        # 6a. Only fire on the FIRST IN punch of the day for this employee.
+        #     Query for any IN punch with time strictly BEFORE the current check-in time.
+        #     Using raw SQL avoids the doc.name=None issue in background jobs.
+        earlier_checkin_count = frappe.db.sql("""
+            SELECT COUNT(*) FROM `tabEmployee Checkin`
+            WHERE employee = %s
+              AND log_type = 'IN'
+              AND DATE(time) = %s
+              AND time < %s
+        """, (doc.employee, today_str, checkin_time.strftime("%Y-%m-%d %H:%M:%S")))[0][0]
+
+        if earlier_checkin_count > 0:
+            return  # Not the first check-in of the day — skip notification
+
+        # 6b. Skip if employee has an approved leave covering today AND is checking in after 12:00 PM.
+        #     This handles half-day / afternoon leaves — they are legitimately coming in after lunch.
+        if checkin_time.hour >= 12:
+            approved_leave = frappe.db.exists(
+                "Leave Application",
+                {
+                    "employee": doc.employee,
+                    "status": "Approved",
+                    "docstatus": 1,
+                    "from_date": ["<=", today_str],
+                    "to_date": [">=", today_str],
+                }
+            )
+            if approved_leave:
+                return  # Employee has an approved leave today and is returning after lunch — skip
+        # Calculate late duration in hours and minutes
+        diff = checkin_time - shift_start
+        total_minutes = int(diff.total_seconds() // 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+
+        hour_str = "hour" if hours == 1 else "hours"
+        minute_str = "minute" if minutes == 1 else "minutes"
+        if hours > 0:
+            late_time_str = f"{hours} {hour_str} and {minutes} {minute_str}"
+        else:
+            late_time_str = f"{minutes} {minute_str}"
+
+        # 7. Get employee details
+        employee_doc = frappe.get_doc("Employee", doc.employee)
+        employee_name = employee_doc.employee_name or doc.employee
+        mobile_number = employee_doc.cell_number
+
+        # Clean mobile number to exactly 10 digits
+        if mobile_number:
+            cleaned_number = "".join(c for c in str(mobile_number) if c.isdigit())
+            if len(cleaned_number) == 12 and cleaned_number.startswith("91"):
+                cleaned_number = cleaned_number[-10:]
+            elif len(cleaned_number) == 11 and cleaned_number.startswith("0"):
+                cleaned_number = cleaned_number[-10:]
+            
+            if len(cleaned_number) == 10:
+                mobile_number = cleaned_number
+            else:
+                frappe.log_error(
+                    title="WhatsApp Notification Skip",
+                    message=f"Invalid mobile number format for employee {doc.employee}: {mobile_number}"
+                )
+                return
+        else:
+            frappe.log_error(
+                title="WhatsApp Notification Skip",
+                message=f"No mobile number found for employee {doc.employee}"
+            )
+            return
+
+        # 8. Fetch WhatsApp instance details directly.
+        # We fetch by name 'dac' directly to avoid dependency on 'default'/'active' flags
+        # which get reset by the sync_instance_data function periodically.
+        # Fallback: pick any available instance if 'dac' is not found.
+        wa_instances = frappe.get_all(
+            'WhatsApp Instance',
+            fields=['name', 'base_url', 'instance_id'],
+            limit=10
+        )
+        if not wa_instances:
+            frappe.log_error(
+                title="WhatsApp Notification Error",
+                message="No WhatsApp Instance configured in the system."
+            )
+            return
+
+        # Prefer instance named 'dac', otherwise use first available
+        instance = next((i for i in wa_instances if i['name'] == 'dac'), wa_instances[0])
+        base_url = instance['base_url']
+        instance_id = instance['instance_id']
+
+        # 9. Prepare message
+        message = (
+            f"Dear {employee_name},\n\n"
+            f"This is to inform you that you checked in late today at {checkin_time.strftime('%I:%M %p')} (Shift start: {shift_start.strftime('%I:%M %p')}). You are late by {late_time_str}.\n\n"
+            f"Please maintain punctuality.\n\n"
+            f"Regards,\n"
+            f"HR Department,\nDac's Inc."
+        )
+
+        # 10. Send WhatsApp message directly via API with 60-second timeout.
+        # We bypass send_custom_whatsapp_message() from webtoolex_whatsapp because it
+        # uses a hardcoded 15-second timeout in make_api_request(). The Vision360 API
+        # sometimes takes longer than 15s to respond, causing a ReadTimeout error.
+        # By calling requests.post() directly here with timeout=60, we give it enough time.
+        url = base_url + "sendText"
+        params = {
+            "token": instance_id,
+            "phone": f"91{mobile_number}",
+            "message": message,
+        }
+
+        try:
+            response = requests.post(url, params=params, timeout=60)
+            response.raise_for_status()
+            response_data = response.json()
+
+            if response_data.get('status') == 'success':
+                frappe.logger().info(
+                    f"Late check-in WhatsApp sent to {employee_name} ({mobile_number})"
+                )
+            else:
+                frappe.log_error(
+                    title="WhatsApp Sending Failed",
+                    message=f"API returned non-success for {employee_name} ({mobile_number}): {response_data}"
+                )
+        except requests.exceptions.RequestException as e:
+            frappe.log_error(
+                title="WhatsApp Sending Failed",
+                message=f"Failed to send late coming notification to {employee_name} ({mobile_number}): {e}"
+            )

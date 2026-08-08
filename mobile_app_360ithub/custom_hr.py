@@ -430,8 +430,9 @@ def get_employees_for_bulk_attendance(date, branch=None):
     """
     if not date:
         frappe.throw(_("Date is required"))
-    if getdate(date) > getdate(today()):
-        frappe.throw(_("Attendance can only be regularized up to today."))
+    if getdate(date) >= getdate(today()):
+        frappe.throw(_("Attendance can only be regularized up to yesterday."))
+
 
     emp_filters = {"status": "Active"}
     if branch:
