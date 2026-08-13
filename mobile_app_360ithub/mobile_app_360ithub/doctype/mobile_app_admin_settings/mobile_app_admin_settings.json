@@ -10,6 +10,9 @@
   "shift_type",
   "professional_tax_applicable",
   "hr_admin_role",
+  "leave_policy_branches",
+  "expiry_exempt_leave_types",
+  "pause_leave_notifications",
   "admin_tab",
   "360_hrms_implementation",
   "bulk_attendance_tab",
@@ -66,13 +69,33 @@
    "fieldtype": "Table MultiSelect",
    "label": "Bulk Attendance Roles",
    "options": "Has Role"
+  },
+  {
+   "fieldname": "leave_policy_branches",
+   "fieldtype": "Table MultiSelect",
+   "label": "Leave Policy Branches",
+   "options": "Branch Multiselect"
+  },
+  {
+   "description": "Expiry ledger entries for these leave types are deleted nightly at 00:45, so unclaimed leave stays applicable for back-dated Leave Applications. Leave types not listed here expire normally.",
+   "fieldname": "expiry_exempt_leave_types",
+   "fieldtype": "Table MultiSelect",
+   "label": "Leave Types Exempt From Expiry",
+   "options": "Leave Type Multiselect"
+  },
+  {
+   "default": "0",
+   "description": "Suppresses FCM push and in-app PWA notifications for Leave Applications. Turn on before bulk allocation/regularisation runs so employees are not alerted, then turn it back off. Does not affect email (already disabled via HR Settings > Send Leave Notification).",
+   "fieldname": "pause_leave_notifications",
+   "fieldtype": "Check",
+   "label": "Pause Leave Notifications"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-16 18:27:43.103841",
+ "modified": "2026-08-04 19:51:43.296204",
  "modified_by": "Administrator",
  "module": "Mobile App 360Ithub",
  "name": "Mobile App Admin Settings",
