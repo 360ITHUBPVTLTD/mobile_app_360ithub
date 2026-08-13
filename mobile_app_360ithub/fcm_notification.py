@@ -28,6 +28,12 @@ def send_leave_notification(doc, method=None):
             # Update current object in memory for notification harvesting
             doc.leave_approver = leave_approver
 
+    # Setting the approver above is functional, so it always runs. Everything
+    # below is purely the push, which is suppressed during bulk regularisation.
+    from mobile_app_360ithub.custom_leave_application import notifications_paused
+    if notifications_paused():
+        return
+
     # --- PART 2: COLLECT RECIPIENTS ---
     recipients = []
 
@@ -88,6 +94,10 @@ def notify_employee_on_finish(doc, method=None):
     """
     Unified function for Leave Status Notifications.
     """
+    from mobile_app_360ithub.custom_leave_application import notifications_paused
+    if notifications_paused():
+        return
+
     if doc.status in ["Approved", "Rejected"]:
         trigger_employee_notification(doc, doc.status)
 

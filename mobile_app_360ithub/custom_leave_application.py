@@ -4,7 +4,35 @@ import frappe
 from frappe import _
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
+
+def notifications_paused():
+    """True when Mobile App Admin Settings > Pause Leave Notifications is ticked.
+
+    Used to keep bulk allocation / ledger regularisation runs silent so employees
+    are not alerted about back-dated records being rebuilt.
+    """
+    try:
+        return bool(
+            frappe.db.get_single_value("Mobile App Admin Settings", "pause_leave_notifications")
+        )
+    except Exception:
+        # Never let a settings lookup break a leave application.
+        return False
+
+
 class CustomLeaveApplication(LeaveApplication):
+
+    def notify_approver(self):
+        """HRMS PWA notification to the approver -- suppressed while paused."""
+        if notifications_paused():
+            return
+        super().notify_approver()
+
+    def notify_approval_status(self):
+        """HRMS PWA notification to the employee -- suppressed while paused."""
+        if notifications_paused():
+            return
+        super().notify_approval_status()
 
     def validate_attendance(self):
         # Do not block cancellation or rejection if attendance already exists
