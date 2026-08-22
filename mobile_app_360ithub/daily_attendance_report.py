@@ -1,5 +1,4 @@
-import os
-import tempfile
+import io
 import frappe
 from frappe.utils import today, getdate, get_datetime, get_url
 from datetime import datetime, time, timedelta
@@ -90,14 +89,11 @@ def send_daily_attendance_report():
     if not is_working_day(today_date):
         return
 
-    # 3. Generate Excel
-    fd, temp_file_path = tempfile.mkstemp(prefix="daily_attendance_report_", suffix=".xlsx")
-    os.close(fd)
-
     try:
-        # Build Excel report and retrieve counts dynamically
-        counts = build_excel_report(temp_file_path, today_date)
-        
+        # 3. Generate Excel fully in-memory (no temp file, no File doctype record)
+        excel_buffer = io.BytesIO()
+        counts = build_excel_report(excel_buffer, today_date)
+
         # 4. Email Report with a beautiful HTML summary
         subject = f"Daily Attendance & Leave Report - {format_date_dmy(today_date)}"
         
@@ -144,6 +140,14 @@ def send_daily_attendance_report():
                             </div>
                         </td>
                     </tr>
+                    <tr>
+                        <td colspan="2" style="padding: 10px; box-sizing: border-box;">
+                            <div style="background-color: #f5eef8; border-left: 4px solid #8e44ad; padding: 15px; border-radius: 4px; text-align: center;">
+                                <span style="display: block; font-size: 13px; color: #555555; font-weight: 600; margin-bottom: 5px;">No Checkin / Leave Record</span>
+                                <strong style="font-size: 24px; color: #8e44ad;">{counts['no_record']}</strong>
+                            </div>
+                        </td>
+                    </tr>
                 </table>
                 
             </div>
@@ -155,36 +159,25 @@ def send_daily_attendance_report():
         </div>
         """
         
-        with open(temp_file_path, "rb") as f:
-            file_content = f.read()
-
-        # Save as a File document so Frappe's QueueBuilder can correctly serialize and store the attachment
-        file_doc = frappe.get_doc({
-            "doctype": "File",
-            "file_name": f"Daily_Attendance_Report_{today_date.strftime('%Y-%m-%d')}.xlsx",
-            "content": file_content,
-            "is_private": 1
-        })
-        file_doc.save(ignore_permissions=True)
-
+        # Attach the in-memory bytes directly — frappe.sendmail builds the MIME
+        # attachment from fname/fcontent without persisting a File doctype record
         frappe.sendmail(
             recipients=recipients,
             subject=subject,
             message=html_message,
             attachments=[{
-                "fid": file_doc.name
+                "fname": f"Daily_Attendance_Report_{today_date.strftime('%Y-%m-%d')}.xlsx",
+                "fcontent": excel_buffer.getvalue()
             }]
         )
         frappe.logger().info(f"Daily Attendance Report emailed successfully to {', '.join(recipients)}.")
 
     except Exception as e:
         frappe.log_error(title="Failed to build/send Daily Attendance Report", message=frappe.get_traceback())
-    finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
 
-def build_excel_report(file_path: str, report_date):
-    """Builds the 4-tab workbook using openpyxl."""
+def build_excel_report(file_or_buffer, report_date):
+    """Builds the 5-tab workbook using openpyxl. `file_or_buffer` may be a
+    file path or a file-like object (e.g. io.BytesIO) — openpyxl supports both."""
     wb = openpyxl.Workbook()
     
     # Tab 1: Today's Team Presence
@@ -203,14 +196,19 @@ def build_excel_report(file_path: str, report_date):
     # Tab 4: Today's Late Comers
     ws4 = wb.create_sheet("Late Comers")
     late_count = build_late_comers_sheet(ws4, report_date)
-    
-    wb.save(file_path)
-    
+
+    # Tab 5: Active employees with no Checkin or Leave Application record today
+    ws5 = wb.create_sheet("No Record")
+    no_record_count = build_missing_records_sheet(ws5, report_date)
+
+    wb.save(file_or_buffer)
+
     return {
         "presence": presence_count,
         "approved": approved_count,
         "unapproved": unapproved_count,
-        "late": late_count
+        "late": late_count,
+        "no_record": no_record_count
     }
 
 def style_sheet(ws, headers: list):
@@ -484,6 +482,67 @@ def build_late_comers_sheet(ws, report_date):
             # Link Employee ID to form view
             cell = ws.cell(row=ws.max_row, column=1)
             cell.hyperlink = make_form_url("Employee", emp)
+
+    finalize_rows_style(ws, len(headers))
+    return count
+
+def build_missing_records_sheet(ws, report_date):
+    """Fetches and builds the sheet for active employees who have neither an
+    Employee Checkin nor a Leave Application (Approved/Open) covering the report date."""
+    headers = ["Employee ID", "Employee Name", "Department", "Designation", "Reporting Manager"]
+    style_sheet(ws, headers)
+
+    # Only consider employees who were already active and joined on/before the report date
+    employees = frappe.get_all(
+        "Employee",
+        filters={
+            "status": "Active",
+            "date_of_joining": ["<=", report_date]
+        },
+        fields=["name", "employee_name", "department", "designation", "reports_to"],
+        order_by="employee_name asc"
+    )
+
+    checked_in = set(frappe.get_all(
+        "Employee Checkin",
+        filters={
+            "time": ["between", [f"{report_date} 00:00:00", f"{report_date} 23:59:59"]]
+        },
+        pluck="employee"
+    ))
+
+    on_leave = set(frappe.get_all(
+        "Leave Application",
+        filters={
+            "status": ["in", ["Approved", "Open"]],
+            "from_date": ["<=", report_date],
+            "to_date": [">=", report_date]
+        },
+        pluck="employee"
+    ))
+
+    count = 0
+    for emp in employees:
+        if emp.name in checked_in or emp.name in on_leave:
+            continue
+
+        manager_name = "-"
+        if emp.reports_to:
+            manager_name = frappe.db.get_value("Employee", emp.reports_to, "employee_name") or emp.reports_to
+
+        row_data = [
+            emp.name,
+            emp.employee_name,
+            emp.department or "-",
+            emp.designation or "-",
+            manager_name
+        ]
+        ws.append(row_data)
+        count += 1
+
+        # Link Employee ID to form view
+        cell = ws.cell(row=ws.max_row, column=1)
+        cell.hyperlink = make_form_url("Employee", emp.name)
 
     finalize_rows_style(ws, len(headers))
     return count
