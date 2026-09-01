@@ -735,7 +735,7 @@ def send_activity_creation_notification(doc, method=None):
         doc.subject,
         doc.category or "Follow-up",
         ref_info,
-        format_date(doc.starts_on, "dd-MMM-yyyy") if doc.starts_on else _("Not set")
+        format_date(doc.scheduled_time, "dd-MMM-yyyy") if doc.scheduled_time else _("Not set")
     )
 
     try:
@@ -767,9 +767,9 @@ def send_daily_activity_summary():
         filters={
             "status": "Open",
             "assigned_to": ["is", "set"],
-            "starts_on": ["is", "set"]
+            "scheduled_time": ["is", "set"]
         },
-        fields=["name", "category", "reference_type", "starts_on", "assigned_to"]
+        fields=["name", "category", "reference_type", "scheduled_time", "assigned_to"]
     )
 
     if not activities:
@@ -780,7 +780,7 @@ def send_daily_activity_summary():
 
     for act in activities:
         user = act.assigned_to
-        start_date = getdate(act.starts_on)
+        start_date = getdate(act.scheduled_time)
         
         if user not in summary_map:
             summary_map[user] = {"overdue": [], "today": []}
