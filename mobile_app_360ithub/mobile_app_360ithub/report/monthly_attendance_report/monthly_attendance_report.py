@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
-from frappe.utils import cint, cstr, getdate
+from frappe.utils import cint, cstr, flt, getdate
 
 
 
@@ -55,8 +55,6 @@ def execute(filters: Optional[Filters] = None) -> Tuple:
 
 	message = get_message() if not filters.summarized_view else ""
 	chart = get_chart_data(attendance_map, filters)
-	if not(filters.get("employee")):
-		data=[]
 
 	return columns, data, message, chart
 
@@ -126,6 +124,18 @@ def get_columns(filters: Filters) -> List[Dict]:
 					"fieldname": "unmarked_days",
 					"fieldtype": "Float",
 					"width": 130,
+				},
+				{
+					"label": _("Total Days"),
+					"fieldname": "total_days",
+					"fieldtype": "Float",
+					"width": 110,
+				},
+				{
+					"label": _("Payment Days"),
+					"fieldname": "payment_days",
+					"fieldtype": "Float",
+					"width": 110,
 				},
 			]
 		)
@@ -303,7 +313,7 @@ def get_employee_related_details(filters: Filters) -> Tuple[Dict, List]:
 		employee_doc = frappe.get_doc("Employee", {"user_id": user_login_id})
 		user_emp=employee_doc.name
 	# print(user_emp)
-	if filters.employee:
+	if user_emp:
 		query = query.where(Employee.name == user_emp)
 	# print()
 	group_by = filters.group_by
@@ -377,6 +387,9 @@ def get_rows(
 ) -> List[Dict]:
 	records = []
 	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
+	lwp_types = frappe.db.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
+	lwp_keys = {frappe.scrub(lt) for lt in lwp_types}
+	total_days = get_total_days_in_month(filters)
 
 	for employee, details in employee_details.items():
 		emp_holiday_list = details.holiday_list or default_holiday_list
@@ -395,6 +408,13 @@ def get_rows(
 			row.update(attendance)
 			row.update(leave_summary)
 			row.update(entry_exits_summary)
+
+			lwp_days = sum(flt(leave_summary.get(k, 0)) for k in lwp_keys)
+			paid_leaves = flt(row.get("total_leaves", 0)) - lwp_days
+			payment_days = flt(row.get("total_present", 0)) + flt(row.get("total_holidays", 0)) + paid_leaves
+
+			row["total_days"] = flt(total_days)
+			row["payment_days"] = flt(payment_days)
 
 			records.append(row)
 		else:
