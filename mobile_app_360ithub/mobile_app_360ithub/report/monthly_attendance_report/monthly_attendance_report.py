@@ -106,6 +106,18 @@ def get_columns(filters: Filters) -> List[Dict]:
 		columns.extend(
 			[
 				{
+					"label": _("Total Days"),
+					"fieldname": "total_days",
+					"fieldtype": "Float",
+					"width": 110,
+				},
+				{
+					"label": _("Payment Days"),
+					"fieldname": "payment_days",
+					"fieldtype": "Float",
+					"width": 110,
+				},
+				{
 					"label": _("Total Present"),
 					"fieldname": "total_present",
 					"fieldtype": "Float",
@@ -125,18 +137,7 @@ def get_columns(filters: Filters) -> List[Dict]:
 					"fieldtype": "Float",
 					"width": 130,
 				},
-				{
-					"label": _("Total Days"),
-					"fieldname": "total_days",
-					"fieldtype": "Float",
-					"width": 110,
-				},
-				{
-					"label": _("Payment Days"),
-					"fieldname": "payment_days",
-					"fieldtype": "Float",
-					"width": 110,
-				},
+				
 			]
 		)
 		columns.extend(get_columns_for_leave_types())
