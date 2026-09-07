@@ -10,8 +10,8 @@
  "idx": 0,
  "is_standard": "Yes",
  "json": "{}",
- "letterhead": null,
- "modified": "2026-04-10 10:47:38.734499",
+ "letter_head": null,
+ "modified": "2026-08-28 19:04:37.832511",
  "modified_by": "Administrator",
  "module": "Mobile App 360Ithub",
  "name": "Monthly Attendance Matrix",
@@ -35,6 +35,57 @@
   },
   {
    "role": "Employee Self Service"
+  },
+  {
+   "role": "Accounts Executive"
+  },
+  {
+   "role": "Admin"
+  },
+  {
+   "role": "DAC CRM"
+  },
+  {
+   "role": "DAC CRM Head"
+  },
+  {
+   "role": "Finance Executive"
+  },
+  {
+   "role": "Inward Team"
+  },
+  {
+   "role": "Junior Merchandiser"
+  },
+  {
+   "role": "Logistics"
+  },
+  {
+   "role": "Merchandiser User"
+  },
+  {
+   "role": "Online"
+  },
+  {
+   "role": "POS Admin"
+  },
+  {
+   "role": "POS Store Manager"
+  },
+  {
+   "role": "POS User"
+  },
+  {
+   "role": "Production Assistant"
+  },
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Purchase Executive"
+  },
+  {
+   "role": "Purchase Manager"
   }
  ],
  "timeout": 0

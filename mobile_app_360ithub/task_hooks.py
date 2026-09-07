@@ -76,7 +76,7 @@ def share_task_with_owner(docname, owner):
                 read=1,
                 write=1,
                 share=1,
-                notify=1
+                notify=0
             )
         else:
             # Update rights if already shared but missing write/share
